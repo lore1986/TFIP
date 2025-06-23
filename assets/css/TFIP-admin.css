@@ -1,0 +1,16 @@
+
+.TFIP-style .ts_instance {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.TFIP-style .ts_instance input[type="time"] {
+    width: 150px; 
+    font-size: 16px;
+}
+
+.TFIP-style  .ts_instance > div {
+    flex-shrink: 0;
+}

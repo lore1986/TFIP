@@ -1,0 +1,29 @@
+<div class="card border-success mb-4"></div>
+    <div class="alert alert-warning" role="alert" id="timeslot_errors" style="display: none;"></div>
+    <div class="card-header bg-success text-white">
+      <strong>Create New Timeslot</strong>
+    </div>
+    <div class="card-body">
+      <form id="create-timeslot-form">
+
+        <input type="hidden" name="id_day" value="<%= idDay %>">
+
+        <div class="mb-3">
+          <label for="start-time" class="form-label">Start Time</label>
+          <input type="time" class="form-control" id="start-time" name="start" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="end-time" class="form-label">End Time</label>
+          <input type="time" class="form-control" id="end-time" name="end" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="max-bookings" class="form-label">Max Bookings</label>
+          <input type="number" class="form-control" id="max-bookings" name="max_bookings" min="1" value="1" required>
+        </div>
+
+        <button type="button" onclick="Call_Ajax_On_New_Timeslot()" class="btn btn-success">Create Timeslot</button>
+      </form>
+    </div>
+  </div>

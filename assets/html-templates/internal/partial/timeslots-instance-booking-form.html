@@ -1,0 +1,8 @@
+<% _.each(timeslots, function(ts) { %>
+    <option 
+      data-idtimeslot="<%= ts.ids %>" 
+      value="<%= ts.valt %>" 
+      <%= ts.sel === 1 ? 'selected' : '' %>>
+      <%= ts.objt %>
+    </option>
+  <% }); %>

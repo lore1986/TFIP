@@ -1,0 +1,137 @@
+<style>
+  .border-dashed {
+    border-style: dashed !important;
+  }
+</style>
+
+<div class="container-fluid my-4">
+  <div class="row mb-3">
+    <div class="col">
+      <button type="button" class="btn btn-primary" onclick="Switch_Back_To_Calendar(0, <%= calendars.id_day %>)">
+        &laquo; To Calendar
+      </button>
+    </div>
+  </div>
+
+  <div class="calendars-view">
+    <h3 class="mb-4">
+      <%= calendars.formatted_date %>
+      <% if (calendars.day_status) { %>
+        <button type="button" class="btn btn-warning" onclick="EnableDisableDay(this)" data-day-status="0" data-day-id="<%= calendars.id_day %>">Disable Day</button>
+        <button type="button" class="btn btn-success" onclick="DisableDay(this)" data-day-id="<%= calendars.id_day %>">Add Booking</button>
+      <% } else { %>
+        <button type="button" class="btn btn-success" onclick="EnableDisableDay(this)" data-day-status="1" data-day-id="<%= calendars.id_day %>">Enable Day</button>
+      <% } %>
+    </h3>
+
+    <div class="row">
+      <div class="alert alert-warning" role="alert" id="alert-day-booking" style="display: none;"></div>
+    </div>
+
+    <div class="row">
+      <div class="col-12">
+        <h3 class="mb-3">Available Time Slots</h3>
+
+        <% const isDayBlocked = calendars.day_status == 0; %>
+        <% _.each(calendars.timeslots, function(slot, index) { %>
+          <div class="card mb-3 
+                      <%= (!isDayBlocked && slot.status == '1')
+                          ? 'border-success'
+                          : 'border-secondary border-dashed bg-light text-muted' %>"
+               data-slot-index="<%= index %>" data-slot-id="<%= slot.timeslot_id %>">
+
+            <div class="card-header d-flex justify-content-between align-items-center timeslot_head">
+              <div>
+                <strong><%= slot.start %> - <%= slot.end %></strong>
+              </div>
+
+              <div class="d-flex align-items-center gap-2 ms-auto">
+                <span class="badge bg-info text-dark">
+                  <%= slot.active_bookings %> / <%= slot.max_bookings %> Booked
+                </span>
+
+                <% if (!isDayBlocked && slot.status == '1') { %>
+                  <button type="button" class="btn btn-warning btn-sm" onclick="EnableDisableSlot(this)"
+                    data-status="0" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Block</button>
+                  <button type="button" class="btn btn-success btn-sm" onclick="EnableDisableSlot(this)" style="display: none;"
+                    data-status="1" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Enable</button>
+                  <button type="button" class="btn btn-success btn-sm" onclick="AddBooking(this)"
+                    data-day-id="<%= slot.timeslot_id %>">+</button>
+                <% } else if (!isDayBlocked && slot.status != '1') { %>
+                  <button type="button" class="btn btn-warning btn-sm" onclick="EnableDisableSlot(this)" style="display: none;"
+                    data-status="0" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Block</button>
+                  <button type="button" class="btn btn-success btn-sm" onclick="EnableDisableSlot(this)"
+                    data-status="1" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Enable</button>
+                <% } %>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <% const hasConfirmed = slot.confirmed_bookings && slot.confirmed_bookings.length > 0; %>
+              <% const hasUnconfirmed = slot.confirmed_n_bookings && slot.confirmed_n_bookings.length > 0; %>
+
+              <% if (hasConfirmed) { %>
+                <p class="fw-bold text-success mb-1">Confirmed Bookings:</p>
+                <ul class="list-group mb-3">
+                  <% _.each(slot.confirmed_bookings, function(booking) { %>
+                    <% if (isDayBlocked) { %>
+                      <li class="list-group-item bg-light text-muted">
+                        <strong><%= booking.identification %></strong>
+                        (<%= booking.participants %> participants)<br>
+                        <small>Time:</small> <%= booking.booking_time %><br>
+                        <small>Phone:</small> <%= booking.phone %><br>
+                        <small>Message:</small> <%= booking.extra_message || 'No message' %>
+                      </li>
+                    <% } else { %>
+                      <a href="javascript:void(0)" onclick="CallBookingDetails(this)"
+                         class="list-group-item list-group-item-action booking_card"
+                         data-booking-id="<%= booking.idbooking %>"
+                         data-slot-id="<%= slot.timeslot_id %>">
+                        <strong><%= booking.identification %></strong>
+                        (<%= booking.participants %> participants)<br>
+                        <small>Time:</small> <%= booking.booking_time %><br>
+                        <small>Phone:</small> <%= booking.phone %><br>
+                        <small>Message:</small> <%= booking.extra_message || 'No message' %>
+                      </a>
+                    <% } %>
+                  <% }); %>
+                </ul>
+              <% } %>
+
+              <% if (hasUnconfirmed) { %>
+                <p class="fw-bold text-warning mb-1">Unconfirmed Bookings:</p>
+                <ul class="list-group">
+                  <% _.each(slot.confirmed_n_bookings, function(booking) { %>
+                    <% if (isDayBlocked) { %>
+                      <li class="list-group-item list-group-item-warning text-muted">
+                        <strong><%= booking.identification %></strong>
+                        (<%= booking.participants %> participants)<br>
+                        <small>Time:</small> <%= booking.booking_time %><br>
+                        <small>Phone:</small> <%= booking.phone %><br>
+                        <small>Message:</small> <%= booking.extra_message || 'No message' %>
+                      </li>
+                    <% } else { %>
+                      <a href="javascript:void(0)" onclick="CallBookingDetails(this)"
+                         class="list-group-item list-group-item-action list-group-item-warning booking_card"
+                         data-booking-id="<%= booking.idbooking %>">
+                        <strong><%= booking.identification %></strong>
+                        (<%= booking.participants %> participants)<br>
+                        <small>Time:</small> <%= booking.booking_time %><br>
+                        <small>Phone:</small> <%= booking.phone %><br>
+                        <small>Message:</small> <%= booking.extra_message || 'No message' %>
+                      </a>
+                    <% } %>
+                  <% }); %>
+                </ul>
+              <% } %>
+
+              <% if (!hasConfirmed && !hasUnconfirmed) { %>
+                <p class="text-muted mb-0">No bookings for this slot.</p>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>

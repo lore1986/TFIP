@@ -1,0 +1,71 @@
+<form id="add-booking-admin-form">
+  <div class="row riga-modifica-prenotazione">
+    <div class="col-12 mb-3">
+      <div class="row">
+        <div class="col-12 col-md-6 admin-modifica">
+          <label for="admin_date_id">Data prenotazione:</label>
+          <input type="text" class="form-control" id="admin_date_id" name="date_id" required>
+        </div>
+        <div class="col-12 col-md-6 admin-modifica">
+          <label for="time_booking">Orario:</label>
+          <select id="admin_time" name="time_booking" class="form-control form-select" required>
+            <option value="0">Seleziona orario</option>
+          </select>
+        </div>
+        </div>
+      </div>
+      <div class="col-12 mb-3">
+        <div class="row">
+          <div class="col-12 col-md-6 admin-modifica">
+            <label for="admin_identification">Nome:</label>
+            <input type="text" class="form-control" id="admin_identification" name="identification" required>
+          </div>
+          <div class="col-12 col-md-6 admin-modifica">
+            <label for="admin_participants">Numero partecipanti:</label>
+            <input type="number" class="form-control" id="admin_participants" name="participants" required>
+          </div>
+        </div>
+      </div>
+  
+      <div class="col-12 mb-3">
+        <div class="row">
+          <div class="col-12 col-md-4 admin-modifica">
+            <label for="admin_phone">Numero di telefono:</label>
+            <input type="text" class="form-control" id="admin_phone" name="phone" placeholder="xxx xxxxxxx" required>
+          </div>
+          <div class="col-12 col-md-8 admin-modifica">
+            <label for="admin_extra_message">Richieste particolari:</label>
+            <textarea class="form-control" id="admin_extra_message" name="extra_message"></textarea>
+          </div>
+        </div>
+      </div>
+  
+      <div class="col-12 mb-3">
+        <div class="row">
+          <div class="col-12 col-md-6 admin-modifica">
+            <label for="admin_status">Stato:</label>
+            <select class="form-control" id="admin_status" name="status" required>
+              <option value="confirmed">Confermata</option>
+              <option value="forwarded">Inoltrata</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6 admin-modifica">
+            <label for="admin_code">Codice:</label>
+            <input class="form-control" id="admin_code" name="code" disabled>
+          </div>
+        </div>
+      </div>
+  
+      <div class="col-12 mb-3">
+        <div class="row">
+          <div class="col-4">
+            <button type="button" onclick="save_form_admin_booking()"  class="btn btn-success"><!-- class="refresh-booking" > -->
+              Aggiungi Prenotazione
+            </button>
+            <button type="button" class="btn btn-primary" onclick="CallBookingForm(0)">- Hide Booking Form</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+  

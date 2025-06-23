@@ -1,0 +1,16 @@
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <p> <%= selected_date =%></p>
+        </div>
+    </div>
+    <div class="row" id="timeslots-row">
+        <% _.each(tifp_timeslots, function(ts) { %>
+            <div class="col">
+                <p>
+                    <strong><%= ts.start %></strong>: <%= ts.end %>
+                </p>
+            </div>
+          <% }); %>
+    </div> 
+</div>
