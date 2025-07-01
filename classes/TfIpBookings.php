@@ -307,7 +307,7 @@ class TfIpBooking {
         $booking_data = [
             'id_original_slot' => intval($_POST['original_timeslot']),
             'id_new_timeslot'  => isset($_POST['id_new_timeslot']) &&  $_POST['id_new_timeslot'] != "" ? intval($_POST['id_new_timeslot']) : null,
-            'id_booking'       => intval($_POST['id']),
+            'id_booking'       => intval($_POST['id_booking']),
             'date_booking'     => (new DateTime(sanitize_text_field($_POST['date_booking'])))->getTimestamp(),
             'post_event_id'    => intval($_POST['postevent_id']),
             'time_booking'     => (new DateTime(sanitize_text_field($_POST['time_booking'])))->format('H:i'),

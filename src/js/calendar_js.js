@@ -22,6 +22,7 @@ function validateFormAdminBooking(formId) {
         // check if time is ok
         if (tag === 'select' && name === 'time_booking') {
             if (parseInt(element.value) === 0) {
+                console.log("time wrong")
                 return false;
             }
             continue;
@@ -34,6 +35,8 @@ function validateFormAdminBooking(formId) {
             element.hasAttribute('required') &&
             (!element.value || element.value.trim() === '')
         ) {
+            console.log("something else wrong")
+
             return false;
         }
     }
@@ -223,8 +226,43 @@ function EnableDisableDay(el)
     })
 }
 
+function CallBookingForm(down_to_up) {
+    
+    const rowBooking = document.getElementById('row-admin-prenotazione');
+    const rowBooking_caller = document.getElementById('booking-form-caller');
 
-function updateTimeslots(date, id) {
+    if (down_to_up == 1) {
+      
+      rowBooking.style.display = 'inherit';
+      rowBooking_caller.style.display = 'none';
+
+      load_form_admin_booking('row-admin-prenotazione', 0, null, null, null);
+
+    } else {
+      document.getElementById('add-booking-admin-form').reset();
+
+      document.getElementById('row-admin-prenotazione').innerHTML = "";
+
+      rowBooking.style.display = 'none';
+      rowBooking_caller.style.display = 'block';
+    }
+  }
+
+  function CallBookingFormFromTimeslot(el) {
+    
+    const timeslotId = el.getAttribute('data-timeslot-id')
+    console.log(timeslotId)
+
+    load_form_admin_booking('container-side', 1, null, timeslotId);
+
+
+    document.getElementById('container-side').style.display = 'block';
+  }
+
+
+
+
+function updateTimeslots(date, timeslotid = null, booking_time = null) {
 
     
     jQuery.ajax({
@@ -233,7 +271,8 @@ function updateTimeslots(date, id) {
         data: {
             action: 'tfip_get_form_timeslots_booking_admin',  
             date: date,
-            bookingid: id,
+            slotid: timeslotid,
+            time_s: booking_time,
             nonce: TFIP_Ajax_Obj.nonce
         },
         success: function(response) {
@@ -247,7 +286,7 @@ function updateTimeslots(date, id) {
      
                 const timeslotTemplate = _.template(templateHtml);
                 const renderedTimeslots = timeslotTemplate({ timeslots: response });
-                const timeslotSelect = document.getElementById(id);
+                const timeslotSelect = document.getElementById('admin_time');
                 timeslotSelect.innerHTML = '<option value="0">Seleziona orario</option>'; 
                 timeslotSelect.innerHTML += renderedTimeslots; 
             });
@@ -258,9 +297,21 @@ function updateTimeslots(date, id) {
     });
 }
 
+function convert_date_to_string(times_date)
+{
+    const dateObj = new Date(parseInt(times_date) * 1000);
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const year = dateObj.getFullYear();
+    const dateStr = `${day}-${month}-${year}`; // Format: d-m-Y
+
+    return dateStr
+}
 
 
-function load_form_admin_booking() {
+function load_form_admin_booking(location, origin = 0, idday = null, idtimeslot = null, bookingdata = null) {
+
+    document.getElementById(location).style.display = 'block';
 
     const fpConf = {
         enableTime: false,
@@ -268,13 +319,44 @@ function load_form_admin_booking() {
         dateFormat: "d-m-Y"
     };
 
+    let day_si = null;
+    let d_today = new Date;
+    d_today.setHours(0, 0, 0); 
+    day_si = convert_date_to_string(d_today.getTime() / 1000 );
+
+    if(idday != null)
+    {
+        day_si = convert_date_to_string(idday)
+        console.log('called not null')
+    }
+
+
+    let time_booking = null;
+
+    if(bookingdata != null)
+    {
+        time_booking = bookingdata.booking_time
+    }
+
     const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/main/admin-booking-form-creation.html';
 
     jQuery.get(templateUrl, function(templateHtml){
 
         const templateCompiled = _.template(templateHtml);
-        const rendered_template = templateCompiled();
-        document.getElementById('form-booking-admin').innerHTML = rendered_template;
+
+        const rendered_template = templateCompiled({
+            name_div: location,
+            origin_i: origin,
+            idday_i: idday,
+            day_str : day_si,
+            idtimeslot_i: idtimeslot,
+            booking_i: bookingdata,
+            postevent: null,
+        });
+
+
+        document.getElementById(location).innerHTML = rendered_template;
+
         
         var phoneInput = document.querySelector("#admin_phone");
         window.intlTelInput(phoneInput, {
@@ -285,14 +367,14 @@ function load_form_admin_booking() {
             utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/js/utils.min.js"
         });
         
-        updateTimeslots(null, 'admin_time');
-        
         const dateInput = document.getElementById('admin_date_id');
         dateInput.flatpickr(fpConf);
 
+        updateTimeslots(day_si, idtimeslot, time_booking);
+
         dateInput.addEventListener('change', function(event) {
             const selectedDate = event.target.value; 
-            updateTimeslots(selectedDate,'admin_time');
+            updateTimeslots(selectedDate);
         });
 
     });
@@ -577,7 +659,7 @@ function Update_form_admin_booking()
     let ad_message = "Errore nel form di aggiornamento della prenotazione";
     const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/admin-response-model.html';
 
-    const valid = validateFormAdminBooking('update-booking-form')
+    const valid = validateFormAdminBooking('add-booking-admin-form')
 
     if (!valid) {
 
@@ -594,12 +676,12 @@ function Update_form_admin_booking()
     }
 
 
-    const form = document.getElementById('update-booking-form')
+    const form = document.getElementById('add-booking-admin-form')
     const formData = new FormData(form);
 
-    
+    console.log(formData)
 
-    const selectTimeslot = document.getElementById('admin_time_update')
+    const selectTimeslot = document.getElementById('admin_time')
     const selectedIndex = selectTimeslot.options['selectedIndex'];
     const selected_slot = selectTimeslot.options[selectedIndex].getAttribute('data-idtimeslot');
 
@@ -633,7 +715,7 @@ function Update_form_admin_booking()
             document.getElementById('form-error-booking').innerHTML = renderedTemplate;
         });
 
-        PrintDayBookings(dateTimestamp)
+        //PrintDayBookings(dateTimestamp)
         
         return;
 
@@ -649,7 +731,7 @@ function Update_form_admin_booking()
 function CallBookingDetails(el) {
     
     const bookingId = el.getAttribute('data-booking-id');
-    const slotId = el.getAttribute('data-slot-id');
+    // const slotId = el.getAttribute('data-slot-id');
 
     jQuery.ajax({
         url: TFIP_Ajax_Obj.ajaxUrl,
@@ -660,76 +742,8 @@ function CallBookingDetails(el) {
             bookingId: bookingId
         },
         success: function (data) {
-            
 
-            console.log('response success')
-            console.log(data)
-
-
-            const templateUrlbooking = TFIP_Ajax_Obj.templatesUrl + 'internal/partial/single-booking-view-edit.html';
-
-            const dateObj = new Date(parseInt(data.timeslot.id_date) * 1000);
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-            const year = dateObj.getFullYear();
-            const dateStr = `${day}-${month}-${year}`; // Format: d-m-Y
-
-            jQuery.get(templateUrlbooking, function(templateHtml) {
-                const single_booking = _.template(templateHtml);
-
-                const rendered_single = single_booking({
-                    booking: {
-                        ...data.booking,
-                        date_booking: dateStr
-                    },
-                    postevent: data.postevent,
-                    timeslotid: data.timeslot.id
-                });
-
-                const booking_panel = document.getElementById('container-side');
-                booking_panel.innerHTML = rendered_single;
-                booking_panel.style.display = "block";
-
-                const phoneInput = document.querySelector("#admin_phone");
-                window.intlTelInput(phoneInput, {
-                    allowDropdown: true,
-                    initialCountry: "it",
-                    autoPlaceholder: "polite",
-                    separateDialCode: true,
-                    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/js/utils.min.js"
-                });
-
-                flatpickr("#admin_date_update", {
-                    enableTime: false,
-                    dateFormat: "d-m-Y"
-                });
-
-                //updateTimeslots(dateStr, 'admin_time_update');
-
-                const dateInput = document.getElementById('admin_date_update');
-
-                console.log('admin date update')
-                console.log(dateInput)
-
-                if (dateInput) {
-                    dateInput.addEventListener('change', function(event) {
-                        const selectedDate = event.target.value;
-                        updateTimeslots(selectedDate, 'admin_time_update');
-                    });
-                }
-            });
-
-
-            const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/timeslots-instance-booking-form.html';
-            
-            jQuery.get(templateUrl, function(templateHtml) {
-     
-                const timeslotTemplate = _.template(templateHtml);
-                const renderedTimeslots = timeslotTemplate({ timeslots: data.alltimeslots });
-                const timeslotSelect = document.getElementById('admin_time_update');
-                timeslotSelect.innerHTML = '<option value="0">Seleziona orario</option>'; 
-                timeslotSelect.innerHTML += renderedTimeslots; 
-            });
+            load_form_admin_booking('container-side', 1, data.timeslot.id_date, data.timeslot.id, data.booking);
 
         },
         error: function(xhr, status, error) {

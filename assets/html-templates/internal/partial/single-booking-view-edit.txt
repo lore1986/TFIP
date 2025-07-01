@@ -1,4 +1,4 @@
-<div class="col-12" id="form-error-booking">
+<!-- <div class="col-12" id="form-error-booking">
   <!--error display-->
 </div>
 <div id="booking-detail-panel" class="card">
@@ -90,4 +90,4 @@
   </div>
 </div>
 
-
+ -->

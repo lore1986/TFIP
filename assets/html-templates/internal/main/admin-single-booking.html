@@ -4,11 +4,15 @@
   }
 </style>
 
+
 <div class="container-fluid my-4">
   <div class="row mb-3">
+    <div class="col-12" id="form-error-booking">
+      <!--error display-->
+    </div>
     <div class="col">
       <button type="button" class="btn btn-primary" onclick="Switch_Back_To_Calendar(0, <%= calendars.id_day %>)">
-        &laquo; To Calendar
+        &laquo; To Calendar 
       </button>
     </div>
   </div>
@@ -18,7 +22,6 @@
       <%= calendars.formatted_date %>
       <% if (calendars.day_status) { %>
         <button type="button" class="btn btn-warning" onclick="EnableDisableDay(this)" data-day-status="0" data-day-id="<%= calendars.id_day %>">Disable Day</button>
-        <button type="button" class="btn btn-success" onclick="DisableDay(this)" data-day-id="<%= calendars.id_day %>">Add Booking</button>
       <% } else { %>
         <button type="button" class="btn btn-success" onclick="EnableDisableDay(this)" data-day-status="1" data-day-id="<%= calendars.id_day %>">Enable Day</button>
       <% } %>
@@ -55,8 +58,8 @@
                     data-status="0" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Block</button>
                   <button type="button" class="btn btn-success btn-sm" onclick="EnableDisableSlot(this)" style="display: none;"
                     data-status="1" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Enable</button>
-                  <button type="button" class="btn btn-success btn-sm" onclick="AddBooking(this)"
-                    data-day-id="<%= slot.timeslot_id %>">+</button>
+                  <button type="button" class="btn btn-success btn-sm" onclick="CallBookingFormFromTimeslot(this)"
+                    data-timeslot-id="<%= slot.timeslot_id %>">+</button>
                 <% } else if (!isDayBlocked && slot.status != '1') { %>
                   <button type="button" class="btn btn-warning btn-sm" onclick="EnableDisableSlot(this)" style="display: none;"
                     data-status="0" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Block</button>

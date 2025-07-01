@@ -83,20 +83,36 @@ class TfIpCalendar {
             $dateid = intval($_POST['dateId']);
             $status = intval($_POST['newStatus']);
 
-            $updated = $this->_ipfDatabase->TFIP_Database_Block_Unblock_Day($dateid, $status);
+            $res = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($dateid);
 
-            if($updated)
+            if($res != null)
             {
-                $resp_obj = [
-                    'resolution' => 1,
-                    'message' => 'OK',
-                    'dateid' => $dateid,
-                ];
+                $updated = $this->_ipfDatabase->TFIP_Database_Block_Unblock_Day($dateid, $status);
+
+                if($updated)
+                {
+                    $resp_obj = [
+                        'resolution' => 1,
+                        'message' => 'OK',
+                        'dateid' => $dateid,
+                    ];
+                }else
+                {
+                    $resp_obj = [
+                        'resolution' => 0,
+                        'message' => 'error in disabling the day',
+                        'dateid' => $dateid,
+                    ];
+                }
             }else
             {
+                $new_day = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($dateid);
+                $timeslots = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($dateid);
+
+
                 $resp_obj = [
-                    'resolution' => 0,
-                    'message' => 'error in disabling the day',
+                    'resolution' => 1,
+                    'message' => 'day still was created',
                     'dateid' => $dateid,
                 ];
             }
@@ -359,7 +375,8 @@ class TfIpCalendar {
         //$today = date('Y-m-01');
         $today = new DateTime('today');
         $timestamp = $today->getTimestamp(); 
-        $idbooking = null;
+        $slotid = 0;
+        $slot_time = null;
         
         if (isset($_POST["date"]) && $_POST["date"] !== "") {
 
@@ -367,9 +384,14 @@ class TfIpCalendar {
             $timestamp = DateTime::createFromFormat('d-m-Y', $date_id_in)->setTime(0,0,0)->getTimestamp();
         }
 
-        if (isset($_POST["bookingid"]) && $_POST["bookingid"] !== "") {
+        if (isset($_POST["slotid"]) && $_POST["slotid"] !== "") {
 
-            $idbooking = intval($_POST["bookingid"]);
+            $slotid = intval($_POST["slotid"]);
+        }
+
+        if(isset($_POST["time_s"]) && $_POST["time_s"] !== "")
+        {
+            $slot_time = sanitize_text_field( $_POST["time_s"]);
         }
         
         
@@ -419,7 +441,7 @@ class TfIpCalendar {
                     'ids' => $timeslots[0]['ids'],
                     'objt' => $time->format('H:i'),
                     'valt' => $time->format('H:i'),
-                    'sel' => 0
+                    'sel' => $slot_time != null && $slot_time == $time->format('H:i') ? 1 : 0
                 ];
                 
                 $slots[] = $slot_; 
@@ -435,12 +457,13 @@ class TfIpCalendar {
             {
                 $start = new DateTime($ts['start']);
                 $end = new DateTime($ts['end']);
-                
+
+
                 $slot_ = [
                     'ids' => $ts['ids'],
                     'objt' => $start->format('H:i') . " - " . $end->format('H:i'),
                     'valt' => $start->format('H:i'),
-                    'sel' => 0
+                    'sel' => $ts['ids'] == $slotid ? 1 : 0
                 ];
 
                 $slots[] = $slot_; 

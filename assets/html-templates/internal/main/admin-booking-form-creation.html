@@ -2,9 +2,16 @@
   <div class="row riga-modifica-prenotazione">
     <div class="col-12 mb-3">
       <div class="row">
+        
+        <% if (origin_i) { %>
+          <input type="number" id="original_timeslot" name="original_timeslot" value="<%- idtimeslot_i %>" />
+          <input type="number" id="id_booking" name="id_booking" value="<%- booking_i.idbooking %>" />
+        <% } %> 
+
+
         <div class="col-12 col-md-6 admin-modifica">
           <label for="admin_date_id">Data prenotazione:</label>
-          <input type="text" class="form-control" id="admin_date_id" name="date_id" required>
+          <input type="text" class="form-control" id="admin_date_id" name="date_id" value="<%- day_str %>" required>
         </div>
         <div class="col-12 col-md-6 admin-modifica">
           <label for="time_booking">Orario:</label>
@@ -18,11 +25,13 @@
         <div class="row">
           <div class="col-12 col-md-6 admin-modifica">
             <label for="admin_identification">Nome:</label>
-            <input type="text" class="form-control" id="admin_identification" name="identification" required>
+            <input type="text" class="form-control" id="admin_identification" name="identification" 
+                value="<%- booking_i ? booking_i.identification : '' %>" required>
           </div>
           <div class="col-12 col-md-6 admin-modifica">
             <label for="admin_participants">Numero partecipanti:</label>
-            <input type="number" class="form-control" id="admin_participants" name="participants" required>
+            <input type="number" class="form-control" id="admin_participants" name="participants" 
+              value="<%- booking_i ? booking_i.participants : '' %>" required>
           </div>
         </div>
       </div>
@@ -31,11 +40,14 @@
         <div class="row">
           <div class="col-12 col-md-4 admin-modifica">
             <label for="admin_phone">Numero di telefono:</label>
-            <input type="text" class="form-control" id="admin_phone" name="phone" placeholder="xxx xxxxxxx" required>
+            <input type="text" class="form-control" id="admin_phone" name="phone" placeholder="xxx xxxxxxx" 
+                value="<%- booking_i ? booking_i.phone : '' %>"  required>
           </div>
           <div class="col-12 col-md-8 admin-modifica">
             <label for="admin_extra_message">Richieste particolari:</label>
-            <textarea class="form-control" id="admin_extra_message" name="extra_message"></textarea>
+            <textarea class="form-control" id="admin_extra_message" name="extra_message">
+              <%- booking_i ? booking_i.extra_message : '' %>
+            </textarea>
           </div>
         </div>
       </div>
@@ -45,13 +57,13 @@
           <div class="col-12 col-md-6 admin-modifica">
             <label for="admin_status">Stato:</label>
             <select class="form-control" id="admin_status" name="status" required>
-              <option value="confirmed">Confermata</option>
-              <option value="forwarded">Inoltrata</option>
+              <option value="confirmed" <%= booking_i && booking_i.status == 1 ? 'selected' : '' %>>Confermata</option>
+              <option value="forwarded" <%= booking_i && booking_i.status == 0 ? 'selected' : '' %>>Inoltrata</option>
             </select>
           </div>
           <div class="col-12 col-md-6 admin-modifica">
             <label for="admin_code">Codice:</label>
-            <input class="form-control" id="admin_code" name="code" disabled>
+            <input class="form-control" id="admin_code" name="code"  value="<%- booking_i ? booking_i.code : '' %>" disabled>
           </div>
         </div>
       </div>
@@ -59,10 +71,12 @@
       <div class="col-12 mb-3">
         <div class="row">
           <div class="col-4">
-            <button type="button" onclick="save_form_admin_booking()"  class="btn btn-success"><!-- class="refresh-booking" > -->
-              Aggiungi Prenotazione
-            </button>
-            <button type="button" class="btn btn-primary" onclick="CallBookingForm(0)">- Hide Booking Form</button>
+            <% if (!origin_i) { %>
+              <button type="button" onclick="save_form_admin_booking()"  class="btn btn-success"> Aggiungi Prenotazione </button>
+            <% } else { %> 
+              <button type="button" onclick="Update_form_admin_booking()"  class="btn btn-success">Update Prenotazione </button>
+            <% } %>
+            <button type="button" class="btn btn-primary" onclick="CallBookingForm(0)" data-container="<%= name_div %>">- Hide Booking Form</button>
           </div>
         </div>
       </div>

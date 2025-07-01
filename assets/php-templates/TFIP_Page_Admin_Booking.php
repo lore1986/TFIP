@@ -82,20 +82,7 @@
     ajax_admin_call_calendar(-1);
   };
 
-  function CallBookingForm(down_to_up) {
-    const rowBooking = document.getElementById('row-admin-prenotazione');
-    const rowBooking_caller = document.getElementById('booking-form-caller');
-
-    if (down_to_up == 1) {
-      rowBooking.style.display = 'inherit';
-      rowBooking_caller.style.display = 'none';
-      load_form_admin_booking();
-    } else {
-      document.getElementById('add-booking-admin-form').reset();
-      rowBooking.style.display = 'none';
-      rowBooking_caller.style.display = 'block';
-    }
-  }
+ 
 
   function Hide_Calendar_Bookings() {
     document.getElementById("calendar-container").style.display = "none";
