@@ -44,7 +44,6 @@ class TFIP_Database {
 
                 }else
                 {
-                    // Check for exact duplicate (optional but good)
                     $existing = $wpdb->get_row(
                         $wpdb->prepare(
                             "SELECT * FROM $table_name 
@@ -82,8 +81,6 @@ class TFIP_Database {
                                     'data_slot' => $data
                                 ]
                             ];
-
-                            //$new_day_availability += $timeslot['capacity'];
 
                         } else {
                             return [
@@ -366,6 +363,17 @@ class TFIP_Database {
         wp_reset_query();
 
         return $timeslot_instance;
+    }
+
+    public function TFIP_Database_Get_Date_From_Timeslot($id_slot) {
+        
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
+        $day_instance = $wpdb->get_row($wpdb->prepare("SELECT id_date FROM $table_name WHERE id = %d", $id_slot));
+        wp_reset_query();
+
+        return $day_instance->id_date;
     }
     
 

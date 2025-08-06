@@ -148,7 +148,19 @@ function save_form_admin_booking() {
             
                 jQuery(document).ready(function ($) {
                     const proceedButton = $('#proceed-booking-btn');
-            
+
+                    if(response.resolution === 1)
+                    {
+                        const [day, month, year] = dateid.split("-");
+
+                        const dateObj = new Date(`${year}-${month}-${day}`);
+                        const dateTimestamp = (dateObj.getTime()) / 1000; 
+
+                        console.log(dateTimestamp)
+                        hide_show_layers(['container-timeslots-bookings'])
+                        PrintDayBookings(dateTimestamp)
+                    }
+
                     if (response.resolution === 3 || response.resolution === 5) {
                         proceedButton.on('click', function () {
                             const action = response.resolution === 3 ? 'tfip_unblock_day' : 'tfip_unblock_timeslot';
@@ -170,6 +182,8 @@ function save_form_admin_booking() {
                                     if (res.resolution === 1) {
                                         messageElement.textContent = res.message;
                                         proceedButton.hide();
+
+
                                     } else {
                                         messageElement.innerHTML = res.message + " . Please try again or refresh page";
                                     }
@@ -180,11 +194,27 @@ function save_form_admin_booking() {
                             });
                         });
                     }
-
-                    ajax_admin_call_calendar(-1, dateid);
+                    
+                    // const show_list = [
+                    //     'container-timeslots-bookings'
+                    // ]
+                    // hide_show_layers(show_list)
+                    // ajax_admin_call_calendar(-1, dateid);
                 });
             });
             
+
+            //HERE
+            // ajax_admin_call_calendar(-1, dateid);
+            // const show_list = ['admin-calendario', 'booking-form-caller']
+            // hide_show_layers(show_list)
+
+            // const [day, month, year] = dateid.split("-");
+
+            // const dateObj = new Date(`${year}-${month}-${day}T00:00:00`);
+            // const timestamp = dateObj.getTime() / 1000;
+
+            // PrintDayBookings(timestamp)
         },
         error: function (xhr, status, error) {
             console.error('AJAX error:', error);
@@ -226,37 +256,63 @@ function EnableDisableDay(el)
     })
 }
 
-function CallBookingForm(down_to_up) {
+
+const list_containers = [
+    'admin-calendario',
+    'booking-form-container_id',
+    'container-timeslots-bookings',
+    'container-timeslots-edit',
+    'booking-form-caller',
+    'booking-form-container_id',
+    // 'container-side',
+    'container-events'
+]
+
+function hide_show_layers(show_list) {
+
+    list_containers.forEach(layer => {
+        const element = document.getElementById(layer);
+        if (!element) return;
+
+        if (show_list.includes(layer)) {
+            element.style.display = 'block';
+        } else {
+            element.style.display = 'none';
+        }
+    });
+}
+
+
+function CallBookingForm() {
     
-    const rowBooking = document.getElementById('row-admin-prenotazione');
-    const rowBooking_caller = document.getElementById('booking-form-caller');
+    const show_list = ['booking-form-container_id']
+    hide_show_layers(show_list)
 
-    if (down_to_up == 1) {
-      
-      rowBooking.style.display = 'inherit';
-      rowBooking_caller.style.display = 'none';
+    load_form_admin_booking('booking-form-container_id', 0, null, null, null);
 
-      load_form_admin_booking('row-admin-prenotazione', 0, null, null, null);
-
-    } else {
-      document.getElementById('add-booking-admin-form').reset();
-
-      document.getElementById('row-admin-prenotazione').innerHTML = "";
-
-      rowBooking.style.display = 'none';
-      rowBooking_caller.style.display = 'block';
-    }
   }
 
+  function HideBookingForm() {
+    
+    const btn_hide = document.getElementById('hide_form_booking_id')
+    const show_list = btn_hide.getAttribute('data-list-containers');
+
+    hide_show_layers(show_list)
+
+  }
+
+
+  
   function CallBookingFormFromTimeslot(el) {
     
-    const timeslotId = el.getAttribute('data-timeslot-id')
-    console.log(timeslotId)
+    const timeslotId = el.getAttribute('data-timeslot-id');
+    const dayidId = el.getAttribute('data-day-id');
+    console.log(dayidId)
 
-    load_form_admin_booking('container-side', 1, null, timeslotId);
+    load_form_admin_booking('booking-form-container_id', 2, dayidId, timeslotId, null);
 
 
-    document.getElementById('container-side').style.display = 'block';
+    // document.getElementById('container-side').style.display = 'block';
   }
 
 
@@ -277,7 +333,7 @@ function updateTimeslots(date, timeslotid = null, booking_time = null) {
         },
         success: function(response) {
             
-            console.log('response update')
+            console.log("update Timeslot response")
             console.log(response)
 
             const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/timeslots-instance-booking-form.html';
@@ -598,26 +654,27 @@ function Switch_Back_To_Calendar(id_call, id_day)
 {
     ajax_admin_call_calendar(-1, id_day);
 
-    switch (id_call) {
-        case 0:
-            document.getElementById('admin-calendario').style.display = 'inherit';
-            document.getElementById('booking-form-caller').style.display = 'block';
+    var show_list = []
 
+    switch (id_call) {
+        
+        case 0:
+
+            show_list = ['admin-calendario', 'booking-form-caller']
             document.getElementById('container-timeslots-bookings').innerHTML = '';
-            document.getElementById('container-side').innerHTML = '';
             document.getElementById('container-events').innerHTML = '';
-            document.getElementById('container-booking').style.display = 'none';
             
             break;
+
         case 1:
-            document.getElementById('admin-calendario').style.display = 'block';
-            document.getElementById('booking-form-caller').style.display = 'block';
+            show_list = ['admin-calendario', 'booking-form-caller']
             document.getElementById('container-timeslots-edit').innerHTML = "";
-            document.getElementById('container-timeslots-edit').style.display = 'none';
             break;
         default:
             break;
     }
+
+    hide_show_layers(show_list);
     
 }
 
@@ -702,6 +759,7 @@ function Update_form_admin_booking()
 
 
         const dateTimestamp = data.date_booking;
+
         let $class_warning = 'txt';
         ad_message =  data.message;
         data.resolution == 1 ? $class_warning = 'alert-success' : $class_warning = 'alert-warning';
@@ -715,7 +773,12 @@ function Update_form_admin_booking()
             document.getElementById('form-error-booking').innerHTML = renderedTemplate;
         });
 
-        //PrintDayBookings(dateTimestamp)
+        if(data.resolution == 1)
+        {
+            PrintDayBookings(dateTimestamp)
+            hide_show_layers(['container-timeslots-bookings'])
+        }
+
         
         return;
 
@@ -742,8 +805,12 @@ function CallBookingDetails(el) {
             bookingId: bookingId
         },
         success: function (data) {
+            const show_list = [
+                'booking-form-container_id',
+            ];
 
-            load_form_admin_booking('container-side', 1, data.timeslot.id_date, data.timeslot.id, data.booking);
+            hide_show_layers(show_list)
+            load_form_admin_booking('booking-form-container_id', 1, data.timeslot.id_date, data.timeslot.id, data.booking);
 
         },
         error: function(xhr, status, error) {
@@ -756,13 +823,11 @@ function CallBookingDetails(el) {
 
 function PrintDayBookings(timestampdate) {
 
-
-
     const templateUrl = TFIP_Ajax_Obj.templatesUrl + 'internal/main/admin-single-booking.html';
     const templateEventsUrl = TFIP_Ajax_Obj.templatesUrl + 'internal/main/admin-panel-events.html';
 
     document.getElementById('admin-calendario').style.display = 'none';
-    document.getElementById('container-booking').style.display = 'inherit';
+    // document.getElementById('container-booking').style.display = 'inherit';
 
     jQuery.ajax({
         url: TFIP_Ajax_Obj.ajaxUrl,
@@ -862,8 +927,7 @@ function handleClickEnd(el, start) {
       }
     });
 
-
-    document.getElementById('row-admin-prenotazione').style.display = 'none';
+    // document.getElementById('container-side').style.display = 'none';
 
     if (diff > clickTime) {
       el.dispatchEvent(longClickEvent);

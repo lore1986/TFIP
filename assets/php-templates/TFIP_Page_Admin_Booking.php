@@ -18,19 +18,17 @@
     ?>
 
     <div class="TFIP-style">
-      <div class="container">
-        <div class="row admin-prenotazione" id="row-admin-prenotazione" style="display: none;">
-          <div class="col-12" id="message-admin"></div>
+      <!-- <div class="container">
+        <div class="row admin-prenotazione" id="container-side" style="display: none;">
           <div class="col-12">
             <div id="form-booking-admin"></div>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <div class="container-fluid">
         <div class="row">
-          <div class="col-12">
-            <div class="admin-calendario" id="admin-calendario">
+            <div class="col-12 admin-calendario" id="admin-calendario">
               <div class="row text-center mt-3">
                 <div class="col-10">
                   <div class="row">
@@ -55,22 +53,11 @@
                 <!-- The calendar will render inside here -->
               </div>
             </div>
-
-            <div id="container-booking" style="display: none;">
-              <div class="row">
-                <div class="col-6" id="container-timeslots-bookings" style="display: none;"></div>
-                <div class="col-6" id="container-side" style="display: none;"></div>
-              </div>
-              <div class="row">
-                <div class="col-12" id="container-events" style="display: none;"></div>
-              </div>
-            </div>
-
-            <div id="container-timeslots-edit" style="display: none;">
-              <!-- Here single booking will render -->
-            </div>
-
-          </div> <!-- /.col-12 -->
+            <div class="col-12 booking-form-container" id="booking-form-container_id"></div>
+            <div class="col-12" id="container-timeslots-bookings" style="display: none;"></div>
+            <div class="col-12" id="container-timeslots-edit" style="display: none;"></div>
+            <!-- <div class="col-6" id="container-side" style="display: none;"></div> -->
+            <div class="col-12" id="container-events" style="display: none;"></div>
         </div> <!-- /.row -->
       </div> <!-- /.container-fluid -->
     </div> <!-- /.TFIP-style -->

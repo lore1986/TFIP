@@ -28,7 +28,9 @@ class TfIpCalendar {
     function __construct(TFIP_Database $database, $start_date = null){
 
         add_action( 'wp_ajax_tfip_get_all_bookings_calendar', array($this, 'TFIP_Calendar_all_bookings_calendar'));
+        
         add_action('wp_ajax_tfip_get_form_timeslots_booking_admin', array($this, 'TFIP_Calendar_Get_Timeslots_Date'));
+
         add_action( 'wp_ajax_tfip_unblock_day', array($this, 'TFIP_Calendar_Unblock_Day'));
         add_action( 'wp_ajax_tfip_unblock_timeslot', array($this, 'TFIP_Calendar_Unblock_Timeslot'));
 
@@ -47,6 +49,13 @@ class TfIpCalendar {
         
         add_action( 'wp_ajax_tfip_disable_enable_timeslot',  array($this, "TFIP_Calendar_Enable_Disable_Timeslot"));
         add_action( 'wp_ajax_tfip_get_disable_day',  array($this, "TFIP_Calendar_Enable_Disable_Day"));
+
+
+        add_action( 'wp_ajax_tfip_get_disable_day',  array($this, "TFIP_Calendar_Enable_Disable_Day"));
+
+        
+
+        
 
         
         // add_action( 'wp_ajax_ipf_editMaxCapacity', array( $this, 'ipf_editMaxCapacity'));
@@ -387,6 +396,7 @@ class TfIpCalendar {
         if (isset($_POST["slotid"]) && $_POST["slotid"] !== "") {
 
             $slotid = intval($_POST["slotid"]);
+            $timestamp = $this->_ipfDatabase->TFIP_Database_Get_Date_From_Timeslot($slotid);
         }
 
         if(isset($_POST["time_s"]) && $_POST["time_s"] !== "")

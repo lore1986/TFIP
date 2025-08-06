@@ -1,12 +1,24 @@
 <form id="add-booking-admin-form">
   <div class="row riga-modifica-prenotazione">
+    <div class="col-12" id="message-admin"></div>
+
     <div class="col-12 mb-3">
       <div class="row">
         
-        <% if (origin_i) { %>
+        <% if (origin_i == 1 && booking_i) { %>
+          <!-- Case 0: New Booking no Timeslots -->
           <input type="number" id="original_timeslot" name="original_timeslot" value="<%- idtimeslot_i %>" />
           <input type="number" id="id_booking" name="id_booking" value="<%- booking_i.idbooking %>" />
-        <% } %> 
+        
+        <% } else if (origin_i == 2) { %>
+          <!-- Case 2: Timeslot only is provided -->
+          <input type="number" id="original_timeslot" name="original_timeslot" value="<%- idtimeslot_i %>" />
+        
+        <% } else { %>
+          <!-- Case 0 or any other -->
+          <!-- No hidden inputs needed, or provide defaults -->
+        <% } %>
+        
 
 
         <div class="col-12 col-md-6 admin-modifica">
@@ -71,12 +83,13 @@
       <div class="col-12 mb-3">
         <div class="row">
           <div class="col-4">
-            <% if (!origin_i) { %>
+            <% if (origin_i == 0 || origin_i == 2) { %>
               <button type="button" onclick="save_form_admin_booking()"  class="btn btn-success"> Aggiungi Prenotazione </button>
+              <button type="button" id="hide_form_booking_id" class="btn btn-primary" onclick="HideBookingForm()" data-list-containers='["admin-calendario", "booking-form-caller"]' data-container="<%= name_div %>">- Hide Booking Form</button>
             <% } else { %> 
               <button type="button" onclick="Update_form_admin_booking()"  class="btn btn-success">Update Prenotazione </button>
+              <button type="button" id="hide_form_booking_id" class="btn btn-primary" onclick="HideBookingForm()" data-list-containers='["container-timeslots-bookings"]' data-container="<%= name_div %>">- Hide Booking Form</button>
             <% } %>
-            <button type="button" class="btn btn-primary" onclick="CallBookingForm(0)" data-container="<%= name_div %>">- Hide Booking Form</button>
           </div>
         </div>
       </div>

@@ -59,7 +59,7 @@
                   <button type="button" class="btn btn-success btn-sm" onclick="EnableDisableSlot(this)" style="display: none;"
                     data-status="1" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Enable</button>
                   <button type="button" class="btn btn-success btn-sm" onclick="CallBookingFormFromTimeslot(this)"
-                    data-timeslot-id="<%= slot.timeslot_id %>">+</button>
+                    data-timeslot-id="<%= slot.timeslot_id %>" data-day-id="<%= calendars.id_day %>">+</button>
                 <% } else if (!isDayBlocked && slot.status != '1') { %>
                   <button type="button" class="btn btn-warning btn-sm" onclick="EnableDisableSlot(this)" style="display: none;"
                     data-status="0" data-day-id="<%= calendars.id_day %>" data-ts-id="<%= slot.timeslot_id %>">Block</button>
