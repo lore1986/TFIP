@@ -87,15 +87,20 @@
                       </li>
                     <% } else { %>
                       <a href="javascript:void(0)" onclick="CallBookingDetails(this)"
-                         class="list-group-item list-group-item-action booking_card"
-                         data-booking-id="<%= booking.idbooking %>"
-                         data-slot-id="<%= slot.timeslot_id %>">
+                      class="list-group-item list-group-item-action booking_card d-flex justify-content-between align-items-center"
+                      data-booking-id="<%= booking.idbooking %>"
+                      data-slot-id="<%= slot.timeslot_id %>">
+                   
+                      <div>
                         <strong><%= booking.identification %></strong>
                         (<%= booking.participants %> participants)<br>
                         <small>Time:</small> <%= booking.booking_time %><br>
                         <small>Phone:</small> <%= booking.phone %><br>
                         <small>Message:</small> <%= booking.extra_message || 'No message' %>
-                      </a>
+                      </div>
+                   
+                      <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteBooking('<%= booking.idbooking %>')">Delete</button>
+                   </a>
                     <% } %>
                   <% }); %>
                 </ul>
@@ -115,13 +120,18 @@
                       </li>
                     <% } else { %>
                       <a href="javascript:void(0)" onclick="CallBookingDetails(this)"
-                         class="list-group-item list-group-item-action list-group-item-warning booking_card"
-                         data-booking-id="<%= booking.idbooking %>">
-                        <strong><%= booking.identification %></strong>
-                        (<%= booking.participants %> participants)<br>
-                        <small>Time:</small> <%= booking.booking_time %><br>
-                        <small>Phone:</small> <%= booking.phone %><br>
-                        <small>Message:</small> <%= booking.extra_message || 'No message' %>
+                        class="list-group-item list-group-item-action list-group-item-warning booking_card d-flex justify-content-between align-items-center"
+                        data-booking-id="<%= booking.idbooking %>">
+
+                        <div>
+                          <strong><%= booking.identification %></strong>
+                          (<%= booking.participants %> participants)<br>
+                          <small>Time:</small> <%= booking.booking_time %><br>
+                          <small>Phone:</small> <%= booking.phone %><br>
+                          <small>Message:</small> <%= booking.extra_message || 'No message' %>
+                        </div>
+
+                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteBooking('<%= booking.idbooking %>')">Delete</button>
                       </a>
                     <% } %>
                   <% }); %>

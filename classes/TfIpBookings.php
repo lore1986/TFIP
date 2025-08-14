@@ -32,12 +32,16 @@ class TfIpBooking {
         add_action( 'wp_ajax_tfip_admin_create_booking', array( $this, 'tfip_admin_create_booking'));
         add_action( 'wp_ajax_tfip_admin_update_booking', array( $this, 'TFIP_Booking_Update_Booking'));
 
+        add_action( 'wp_ajax_tfip_admin_delete_booking', array( $this, 'TFIP_Booking_Delete_Booking'));
+
         //add_action( 'rest_api_init', array($this,'show_booking_endpoint') );
 
         add_action('init', [$this,'booking_rewrite_rule']);
         add_filter('query_vars', [$this, 'add_custom_query_var']);
 
         add_filter('template_include', [$this, 'load_custom_plugin_template']);
+
+        
 
 
     }
@@ -236,7 +240,7 @@ class TfIpBooking {
 
     */
 
-    
+    //acab
     public function TFIP_Booking_Create_Client_Booking(
         $id_timeslot, $identification, $participants, $phone, $extra_message, $code, $status, $timebooking, $post_event_id = 0
     ) {
@@ -291,7 +295,7 @@ class TfIpBooking {
     }
 
 
-
+    //ok
     public function TFIP_Booking_Update_Booking()
     {
         // date_booking d-m-Y
@@ -489,32 +493,9 @@ class TfIpBooking {
         }
 
         return $new_active_day;
-
-
-        // if($day_res['resolution'] != 1)
-        // {
-        //     return [
-        //         'timeslot_id' => null,
-        //         'resolution' => 0,
-        //         'day_id' => null,
-        //         'message' => "Error in creating the day instance. you should not be here"
-        //     ];
-        // }else
-        // {
-        //     $new_active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($new_active_day_id);
-        // }
-        // if(!$new_active_day)
-        // {
-        //     return [
-        //         'timeslot_id' => null,
-        //         'resolution' => 0,
-        //         'day_id' => null,
-        //         'message' => "No matching day found for the selected time. you should not be here"
-        //     ];
-
-        // }
     }
 
+    //ok
     public function TFIP_Booking_Check_Update_Booking($booking_data)
     {
         // $booking_data = [
@@ -577,7 +558,7 @@ class TfIpBooking {
 
         $temp_day_total_max  = 0;
         $day_local_active = 0;
-        $same_slot = false;
+        //$same_slot = false;
         $availables = 0;
 
         foreach ($timeslots as $local_slot) {
@@ -590,35 +571,33 @@ class TfIpBooking {
             $same_slot = true;
         }
 
-        // if($booking_data['status'] != (int)$original_timeslot->active)
-        // {
-        //     if($booking_data['status'] > (int)$original_timeslot->active) {$status_changed = 1;}
-        //     else {$status_changed = -1;}
-        // }
+        //if booking is active remove all participants from previous booking from count.
+        
+        $availables = 0;
 
-
+        // $availables = $new_booking_timeslot->max_bookings - $booking_data['participants'] - $new_booking_timeslot->active_bookings;
         $availables = $new_booking_timeslot->max_bookings - $booking_data['participants'] - $new_booking_timeslot->active_bookings;
 
-        if($booking_data['status'] == (int)$original_booking->status)
+        if($same_slot)
         {
-            if($same_slot)
+            if(($booking_data['status'] > 0) && ((int)$original_booking->status > 0) )
             {
-                if($booking_data['status'] > 0)
-                {
-                    $availables = $new_booking_timeslot->max_bookings - ($booking_data['participants'] 
-                        + $original_booking->participants - $new_booking_timeslot->active_bookings);
-                }
-            }
-        }else if($booking_data['status'] < (int)$original_booking->status)
-        {
-            if($same_slot)
+                $availables = $new_booking_timeslot->max_bookings - $booking_data['participants'] 
+                            + $original_booking->participants - $new_booking_timeslot->active_bookings;
+
+            }else if(intval($booking_data['status']) < intval($original_booking->status))
             {
                 $availables = $new_booking_timeslot->max_bookings - $new_booking_timeslot->active_bookings + $original_booking->participants;
-            }else
+
+            }
+        }else
+        {
+            if(($booking_data['status'] < 1))
             {
                 $availables = $new_booking_timeslot->max_bookings - $new_booking_timeslot->active_bookings;
             }
         }
+        
     
 
         if(!$new_active_day->active)
@@ -678,118 +657,7 @@ class TfIpBooking {
     }
 
 
-    // TFIP ONE OF PROGRAM MAIN FUNCTION
-    public function TFIP_Booking_Verify_Availability_Prepare_Booking($active_day_id, $number_participants, $timebooking, $status)
-    {
-        $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($active_day_id);
-
-        if ($active_day) {
-
-            if($active_day->active)
-            {
-                $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($active_day_id);
-                $temp_day_total_max = 0;
-                $temp_total_active = 0;
-
-
-                $booking_timeslot = null;
-
-
-                foreach ($timeslots as $ts) {
-                    $ts_start_date = DateTime::createFromFormat('H:i', $ts->timeslotstart);
-                    
-                    if ($ts_start_date == $timebooking) {
-                        $booking_timeslot = $ts;
-                    }
-                    $temp_day_total_max += $ts->max_bookings;
-                    $temp_total_active += $ts->active_bookings;
-                }
-
-
-                if(count($timeslots) == 1 && !$booking_timeslot)
-                {
-                    $booking_timeslot = $timeslots[0];
-                }
-                
-
-
-                if (!$booking_timeslot) {
-                    
-                    return [
-                        'timeslot_id' => null,
-                        'resolution' => 0,
-                        'day_id' => $active_day_id,
-                        'message' => "No matching time slot found for the selected time."
-                    ];
-                }
-
-                if(!$booking_timeslot->active)
-                {
-                    return [
-                        'timeslot_id' => $booking_timeslot->id,
-                        'resolution' => 5,
-                        'day_id' => $active_day_id,
-                        'message' => "Timeslot is locked."
-                    ];
-                }
-
-                if ($temp_day_total_max != $active_day->day_max) {
-                    return [
-                        'timeslot_id' => $booking_timeslot->id,
-                        'resolution' => 4,
-                        'day_id' => $active_day_id,
-                        'message' => "Error: max capacity for the day does not match the sum of timeslot capacities. you should not be here."
-                    ];
-                }
-
-
-                $availables = $booking_timeslot->max_bookings - $booking_timeslot->active_bookings;
-
-                if($status)
-                {
-                    $availables = $booking_timeslot->max_bookings - $booking_timeslot->active_bookings - $number_participants;
-                }
-                
-
-                if ($availables >= 0) {
-
-                    return [
-                        'timeslot_id' => $booking_timeslot->id,
-                        'resolution' => 1,
-                        'day_id' => $active_day_id,
-                        'message' => 'Can create booking in timeslot' 
-                    ];
-                    
-                } else {
-
-                    return [
-                        'timeslot_id' => $booking_timeslot->id,
-                        'resolution' => 0,
-                        'day_id' => $active_day_id,
-                        'message' => "No space available for so many customers at the selected time slot."
-                    ];
-                }
-            }else
-            {
-                return [
-                    'timeslot_id' => null,
-                    'resolution' => 3,
-                    'day_id' => $active_day_id,
-                    'message' => "Day is not active."
-                ];
-            }
-        } 
-        else {
-            
-            return [
-                'timeslot_id' => null,
-                'resolution' => 2,
-                'day_id' => null,
-                'message' => "No matching day slot found for the selected time."
-            ];
-
-        }
-    }
+    
 
     public function TFIP_Booking_Get_Timeslot_For_Booking($timeslots, $booking_time)
     {
@@ -798,7 +666,6 @@ class TfIpBooking {
 
         if($timeslots)
         {
-            //validate this next part with a flag on the if (if nothing is found in between the two times)
             if(count($timeslots) > 1)
             {
                 foreach($timeslots as $ts_obj)
@@ -836,7 +703,9 @@ class TfIpBooking {
     
     
 
-
+    /*
+    
+    */
     public function TFIP_Booking_Create_And_Return($slot_id, $booking, $post_id = 0)
     {
 
@@ -844,14 +713,6 @@ class TfIpBooking {
             $slot_id, $booking->identification, $booking->participants,
             $booking->phone, $booking->extra_message, $booking->code, $booking->status, $booking->time_booking, $post_id);
         
-        // $res = [
-        //     'id_booking' => $wpdb->insert_id,
-        //     'resolution' => 1,
-        //     'participants' => $participants,
-        //     'id_timeslot' => $id_timeslot
-        // ];
-        
-        //update booking for the day and for the timeslots
         if($res['resolution'] == 1)
         {   
 
@@ -874,12 +735,6 @@ class TfIpBooking {
                 'updated_availability' => $ret['updated_availability']
             ];
             
-            // $ret = [
-            //     'resolution' => 1,
-            //     'message' => 'Max limit reached cannot crete booking',
-            //     'updted_availability' => $timeslot_instance['max_bookings'] - $active_bookings
-            // ];
-
             return $obj;
 
         }else
@@ -892,62 +747,176 @@ class TfIpBooking {
         }
     }
 
-    public function TFIP_Booking_Process_Validation_Result($id_date, $booking, $validation)
+    private function return_json_response($resolution, $message,  $day_id = null, $timeslot_id = null, $updated_ava = null)
     {
-        switch ($validation['resolution']) {
-            case 0:
-                $this->send_json_response(0, 'Selected timeslot is already full or number of customers is over the slot limit.');
-                break;
-            case 1:
-                $timeslot_id = $validation['timeslot_id'];
+        $response = [
+            'timeslot_id' => $timeslot_id,
+            'resolution' => $resolution,
+            'message' => $message,
+            'day_id' => $day_id,
+            'updated_availability' => $updated_ava
+        ];
 
-                if (!$timeslot_id) {
-                    $this->handle_missing_timeslot_case($id_date, $booking);
+        return $response;
+    }
+
+
+    /*
+        Verify availability in timeslot and return object with message
+        obje =  [
+            'timeslot_id' => null,
+            'resolution' => 0,
+            'day_id' => $active_day_id,
+            'message' => "No matching time slot found for the selected time. You should not see this"
+        ];
+    */
+    public function TFIP_Booking_Verify_Availability_Prepare_Booking($active_day_id, $number_participants, $timebooking, $status)
+    {
+
+        $return_obj =  [
+            'timeslot_id' => null,
+            'resolution' => 0,
+            'day_id' => null,
+            'message' => "empty"
+        ];
+
+        $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($active_day_id);
+
+        if (!$active_day) {
+
+            $date_res = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($active_day_id);
+                
+            if($date_res['resolution'] == 0)
+            {
+                $return_obj['message'] = 'Error creating Day';
+                return $return_obj;
+            }
+
+            $active_day = $date_res['id_date'];
+        } 
+
+        $timeslots_res = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($active_day_id);
+        
+        if($timeslots_res == null)
+        {
+            $timeslots_res = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($active_day_id);
+            if($timeslots_res['resolution'] == 0)
+            {
+                $return_obj['message'] = 'Error creating Timeslots';
+                return $return_obj;
+            }
+        }
+        
+        $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($active_day_id);
+
+        if($active_day->active)
+        {
+            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($active_day_id);
+            $temp_day_total_max = 0;
+            $temp_total_active = 0;
+
+
+            $booking_timeslot = null;
+
+            //select correct timeslot. selection is based on time.
+            //count all the bookings already present
+            
+            if(count($timeslots) == 1)
+            {
+                $booking_timeslot = $timeslots[0];
+
+            }else
+            {
+                foreach ($timeslots as $ts) {
+                    $ts_start_date = DateTime::createFromFormat('H:i', $ts->timeslotstart);
                     
-                } else {
-                    $this->finalize_booking($timeslot_id, $booking);
+                    if ($ts_start_date == $timebooking) {
+                        $booking_timeslot = $ts;
+                    }
+                    $temp_day_total_max += $ts->max_bookings;
+                    $temp_total_active += $ts->active_bookings;
                 }
-                break;
+            }
 
-            case 2:
 
-                $date_obj = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($id_date);
-                $this->handle_missing_timeslot_case($date_obj['id_date'], $booking);
 
-                break;
-            case 3:
-                //day is blocked
-                $this->send_json_response(3, $validation['message'], null, $validation['day_id'],  null);
-                break;
-            case 4:
-                //mismatch max day vs sum of all max timeslots
-                $this->send_json_response(4, $validation['message'], null, $validation['day_id'], null);
-                break;
-            case 5:
-                //timeslot is locked
-                $this->send_json_response(5, $validation['message'], null, $validation['day_id'],  $validation['timeslot_id']);
-            default:
-                $this->send_json_response(0, 'Unexpected booking resolution.');
+            if (!$booking_timeslot) {
+                
+                return [
+                    'timeslot_id' => null,
+                    'resolution' => 0,
+                    'day_id' => $active_day_id,
+                    'message' => "No matching time slot found for the selected time. You should not see this"
+                ];
+            }
+
+            if(!$booking_timeslot->active)
+            {
+                return [
+                    'timeslot_id' => $booking_timeslot->id,
+                    'resolution' => 5,
+                    'day_id' => $active_day_id,
+                    'message' => "Timeslot is locked."
+                ];
+            }
+
+            if ($temp_day_total_max != $active_day->day_max) {
+                return [
+                    'timeslot_id' => $booking_timeslot->id,
+                    'resolution' => 0,
+                    'day_id' => $active_day_id,
+                    'message' => "Max capacity for the day does not match the sum of timeslot capacity. you should not be here."
+                ];
+            }
+
+
+            $availables = $booking_timeslot->max_bookings - $booking_timeslot->active_bookings;
+
+            if($status)
+            {
+                $availables = $booking_timeslot->max_bookings - $booking_timeslot->active_bookings - $number_participants;
+            }
+            
+
+            if ($availables >= 0) {
+
+                return [
+                    'timeslot_id' => $booking_timeslot->id,
+                    'resolution' => 1,
+                    'day_id' => $active_day_id,
+                    'message' => 'Can create booking in timeslot' 
+                ];
+                
+            } else {
+
+                return [
+                    'timeslot_id' => $booking_timeslot->id,
+                    'resolution' => 0,
+                    'day_id' => $active_day_id,
+                    'message' => "No space available for so many customers at the selected time slot."
+                ];
+            }
+        }else
+        {
+            return [
+                'timeslot_id' => null,
+                'resolution' => 3,
+                'day_id' => $active_day_id,
+                'message' => "Day is not active."
+            ];
         }
     }
 
-    /* 
-        Function to create booking in the prenotazioni page
-
-        TABLES : wp_tfip_bookings : wp_tfip_timeslot_instances : wp_tfip_active_days
-
-        BOOKING: idbooking 	id_timeslot 	idpostevent 	identification 	participants 	phone 	extra_message 	code 	status 	booking_time 	
-        TIMESLOT:  	id 	id_date 	timeslotstart 	timeslotend 	max_bookings   active_bookings	 active 	
-        ACTIVE DAY:  	id_date 	day_max  active 	
-
-
+    /*
+        Create Booking    
     */
-
     public function tfip_admin_create_booking()
     {
         if (!isset($_POST['formdata'])) {
-            $this->send_json_response(0, 'Missing booking data.');
+            $this->send_json($this->return_json_response(0, 'Dati prenotazione mancanti'));
         }
+
+        $fin_res = null;
 
         $formData = json_decode(stripslashes($_POST['formdata']), true);
 
@@ -968,76 +937,21 @@ class TfIpBooking {
         // Validate booking availability
         $validation = $this->TFIP_Booking_Verify_Availability_Prepare_Booking($id_date, $booking->participants, $booking->time_booking, $booking->status);
 
-        $this-> TFIP_Booking_Process_Validation_Result($id_date, $booking, $validation);
+        if(intval($validation['resolution']) == 1)
+        {
+            $res = $this->TFIP_Booking_Create_And_Return($validation['timeslot_id'], $booking);
+            $fin_res = $this->return_json_response($res['resolution'], $res['message'], $res['day_id'], $res['timeslot_id'], $res['updated_availability']);
+        }else
+        {
+            $fin_res = $this->return_json_response($validation['resolution'], $validation['message'], 
+                $validation['day_id'], $validation['timeslot_id'], null);
+        }
+
+        $this->send_json($fin_res);
         
     }
 
-    private function handle_missing_timeslot_case($id_date, $booking)
-    {
-        $ret_timeslots = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($id_date);
-
-        if ($ret_timeslots['resolution'] !== 1) {
-            $this->send_json_response(0, 'Error in the daily timeslot creation.', null, $id_date,  null);
-        }
-
-        $validation = $this->TFIP_Booking_Verify_Availability_Prepare_Booking($id_date, $booking->participants, $booking->time_booking, $booking->status);
-        
-        switch ($validation['resolution']) {
-            case 0:
-                $this->send_json_response(0, 'Selected timeslot is already full or number of customers is over the slot limit.', null, $validation['day_id'],  $validation['timeslot_id']);
-                break;
-            case 1:
-
-                $timeslots = (array) $ret_timeslots['timeslots'];
-                $slot_response = $this->TFIP_Booking_Get_Timeslot_For_Booking($timeslots, $booking->time_booking);
-
-                if ($slot_response['resolution'] !== 1) {
-                    $this->send_json_response(0, 'Cannot find a valid timeslot for the selected time.', null, $validation['day_id'], null);
-                }
-                
-                $this->finalize_booking($slot_response['selected_timeslot_id'], $booking);
-
-            case 2:
-
-                $date_obj = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($id_date);
-                $this->handle_missing_timeslot_case($date_obj['id_date'], $booking);
-
-                break;
-            case 3:
-                //day is blocked
-                $this->send_json_response( $validation['resolution'], $validation['message'], null, $validation['day_id'],  null);
-                break;
-            case 4:
-                //mismatch max day vs sum of all max timeslots
-                $this->send_json_response( $validation['resolution'], $validation['message'], null, $validation['day_id'],  null);
-                break;
-            case 5:
-                $this->send_json_response( $validation['resolution'], $validation['message'], null, $validation['day_id'],  $validation['timeslot_id']);
-
-            default:
-                $this->send_json_response( $validation['resolution'], $validation['message'], $validation['updated_availability'], $validation['day_id'],  $validation['timeslot_id']);
-        }
-
-    }
-
-
-    private function finalize_booking($timeslot_id, $booking)
-    {
-        $res = $this->TFIP_Booking_Create_And_Return($timeslot_id, $booking);
-        $this->send_json_response($res['resolution'], $res['message'], $res['updated_availability'], $res['day_id'], $res['timeslot_id']);
-    }
-
-    private function send_json_response($resolution, $message, $updated_ava = null, $day_id = null, $timeslot_id = null)
-    {
-        $response = [
-            'timeslot_id' => $timeslot_id,
-            'resolution' => $resolution,
-            'message' => $message,
-            'day_id' => $day_id,
-            'updated_availability' => $updated_ava
-        ];
-        $this->send_json($response);
-    }
+    
 
     private function send_json($data)
     {
@@ -1048,34 +962,41 @@ class TfIpBooking {
     }
 
 
-    public function read_booking($id) {
+    public function TFIP_Booking_Delete_Booking() {
 
-        global $wpdb;
+        $res = null;
 
-        $table_name = $wpdb->prefix . 'ipf_bookings';
+        if (isset($_POST['bookingId'])) {
+            global $wpdb;
+            
+            $id = intval($_POST['bookingId']);
 
-        $query = $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id);
-        $result = $wpdb->get_row($query);
+            $table_name = $wpdb->prefix . 'tfip_bookings';
 
-        return $result;
+            $booking = $this->_ipfDatabase->TFIP_Database_Get_Single_Booking($id);
+            $id_date = $this->_ipfDatabase->TFIP_Database_Get_Specific_Timeslot($booking->id_timeslot)->id_date;
+        
+            $result = $wpdb->delete($table_name, array('idbooking' => $id));
+
+
+            $res = $this->_ipfDatabase->TFIP_Database_Update_Timeslots_Availability($booking->id_timeslot, -$booking->participants);
+            $res = $this->_ipfDatabase->TFIP_Database_Update_Day_Max_Availability($id_date);
+            
+            if($result !== false && $result > 0)
+            {
+                $res = $this->return_json_response(1, 'OK', $id_date, null, null);
+            }else
+            {
+                $res = $this->return_json_response(0, 'Error in deleting from database');
+            }
+  
+        }else
+        {
+            $res = $this->return_json_response(0, 'Missing booking data');
+        }
+
+        $this->send_json($res);        
     }
-
-    public function update_booking($id, $data) {
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ipf_bookings';
-
-        $wpdb->update($table_name, $data, array('id' => $id));
-    }
-
-    public function delete_booking($id) {
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ipf_bookings';
-
-        $wpdb->delete($table_name, array('id' => $id));
-    }
-    ///////
 
 
 
@@ -1223,49 +1144,49 @@ class TfIpBooking {
     }
     
 
-    public function tfIpf_final_booking_confirm() {
-        $html = '';
+    // public function tfIpf_final_booking_confirm() {
+    //     $html = '';
     
-        if (isset($_POST['data_data']['idbooking']) && isset($_POST['data_data']['code'])) {
-            $idbooking = sanitize_text_field($_POST['data_data']['idbooking']);
-            $booking_code = mb_strtoupper(sanitize_text_field($_POST['data_data']['code']));
+    //     if (isset($_POST['data_data']['idbooking']) && isset($_POST['data_data']['code'])) {
+    //         $idbooking = sanitize_text_field($_POST['data_data']['idbooking']);
+    //         $booking_code = mb_strtoupper(sanitize_text_field($_POST['data_data']['code']));
             
-            $confirm = $this->_ipfDatabase->tfIpf_verify_code($idbooking, $booking_code);
+    //         $confirm = $this->_ipfDatabase->tfIpf_verify_code($idbooking, $booking_code);
     
-            if ($confirm['error'] == 0) {
+    //         if ($confirm['error'] == 0) {
                 
-                $single_booking = $confirm['booking'];
+    //             $single_booking = $confirm['booking'];
 
-                $phone_code = substr($single_booking->phone, 0, 3);
-                $la_lang = 'en_GB';
+    //             $phone_code = substr($single_booking->phone, 0, 3);
+    //             $la_lang = 'en_GB';
 
-                if($phone_code == '+39')
-                {
-                    $la_lang = 'it';
-                }
+    //             if($phone_code == '+39')
+    //             {
+    //                 $la_lang = 'it';
+    //             }
 
-                ob_start();
-                include plugin_dir_path(__FILE__) . '../template/partial/booking_success.php';
-                $html = ob_get_clean();
+    //             ob_start();
+    //             include plugin_dir_path(__FILE__) . '../template/partial/booking_success.php';
+    //             $html = ob_get_clean();
                 
-                //REACTIVATE
-                $result = $this->_manager->tf_ipf_send_confirmation($single_booking->phone, $single_booking->identification, $booking_code, $la_lang);
+    //             //REACTIVATE
+    //             $result = $this->_manager->tf_ipf_send_confirmation($single_booking->phone, $single_booking->identification, $booking_code, $la_lang);
 
 
-            } else if ($confirm['error'] == 2) {
-                ob_start();
-                include plugin_dir_path(__FILE__) . '../template/partial/confirm_booking.php';
-                $html = ob_get_clean();
-            } else {
-                ob_start();
-                include plugin_dir_path(__FILE__) . '../template/booking_fail.php';
-                $html = ob_get_clean();
-            }
-        }
+    //         } else if ($confirm['error'] == 2) {
+    //             ob_start();
+    //             include plugin_dir_path(__FILE__) . '../template/partial/confirm_booking.php';
+    //             $html = ob_get_clean();
+    //         } else {
+    //             ob_start();
+    //             include plugin_dir_path(__FILE__) . '../template/booking_fail.php';
+    //             $html = ob_get_clean();
+    //         }
+    //     }
     
-        echo $html;
-        exit();
-    }
+    //     echo $html;
+    //     exit();
+    // }
 
 
    

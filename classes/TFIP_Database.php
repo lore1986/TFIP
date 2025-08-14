@@ -614,27 +614,11 @@ class TFIP_Database {
             {
                 $table_name = $wpdb->prefix . 'tfip_active_days';
 
-                $active_day = $this->TFIP_Database_Get_Active_Day($timeslot_instance['id_date']);
-                $all_timeslots = $this->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timeslot_instance['id_date']);
+                $same_slot_bookings = $timeslot_instance['active_bookings'] + (int) $participants;
 
-                $total_sum = 0;
-                $same_slot_bookings = 0;
-
-                foreach ($all_timeslots as $timeslot) {
-                    if ($timeslot->id != $id_slot) {
-                        $total_sum += (int) $timeslot->active_bookings;
-                    } else {
-                        $same_slot_bookings = (int) $timeslot->active_bookings;
-                    }
-                }
-                
-               
-                $adjusted_slot = (int) $same_slot_bookings + (int) $participants;
-            
-
-                if($adjusted_slot < 0)
+                if($same_slot_bookings < 0)
                 {
-                    $ret = [
+                    return [
                         'resolution' => 0,
                         'message' => "Removing too many participants. not allowed",
                         'updated_availability' => 0
@@ -642,14 +626,13 @@ class TFIP_Database {
                     
                 }else
                 {
-                    $total_active_bookings = $total_sum + $adjusted_slot;
-
-                    if($total_active_bookings <= $active_day->day_max )
+                
+                    if($timeslot_instance['max_bookings'] >= $same_slot_bookings )
                     {
                         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
 
                         $data = array(
-                            'active_bookings' => $total_active_bookings,
+                            'active_bookings' => $same_slot_bookings,
                         );
 
                         $where = array(
@@ -657,30 +640,33 @@ class TFIP_Database {
                         );
                     
                         $updated = $wpdb->update($table_name, $data, $where);
-                    
+
                         if ($updated === false) {
                             
-                            $ret = [
+                            return  [
                                 'resolution' => 0,
                                 'message' => 'Failed to update active_bookings: ' . $wpdb->last_error,
                                 'updated_availability' => 0
-                            ];
-
-                            wp_reset_query();
-                        
+                            ];                        
 
                         }else
                         {
-                            wp_reset_query();
                         
-                            $ret = [
+                            return [
                                 'resolution' => 1,
                                 'message' => 'OK',
-                                'updated_availability' => $timeslot_instance['max_bookings'] - $total_active_bookings
+                                'updated_availability' => $timeslot_instance['max_bookings'] - $same_slot_bookings
                             ];
 
                         }
                         
+                    }else
+                    {
+                        return [
+                            'resolution' => 0,
+                            'message' => "Trying to add too many participants",
+                            'updated_availability' => 0
+                        ];
                     }
                 }
 

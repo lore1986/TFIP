@@ -4,6 +4,10 @@ function validateFormAdminBooking(formId) {
     const form = document.getElementById(formId);
     const elements = form;
 
+    let output = {
+        res: false,
+        message: "empty"
+    }
 
     for (let element of Array.from(elements)) {
 
@@ -22,8 +26,8 @@ function validateFormAdminBooking(formId) {
         // check if time is ok
         if (tag === 'select' && name === 'time_booking') {
             if (parseInt(element.value) === 0) {
-                console.log("time wrong")
-                return false;
+                output.message = "L'orario della prenotazione mancante o sbagliato";
+                return output;
             }
             continue;
         }
@@ -35,13 +39,16 @@ function validateFormAdminBooking(formId) {
             element.hasAttribute('required') &&
             (!element.value || element.value.trim() === '')
         ) {
-            console.log("something else wrong")
+            console.log("element is required")
 
-            return false;
+            output.message = "Elemento " + element.name  + " manca ed e' obbligatorio";
+
+            return output;
         }
     }
 
-    return true;
+    output.res = true;
+    return output;
 }
 
 function serializeForm(formId) {
@@ -76,15 +83,17 @@ function save_form_admin_booking() {
 
     const valid = validateFormAdminBooking(formId);
 
-    if (!valid) {
+    console.log("result is " + valid)
 
-        let ad_message = "Errore nel form di creazione della prenotazione";
+    if (!valid.res) {
+
+        
         const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/admin-response-model.html';
 
         jQuery.get(templateUrl, function (templateHtml) {
             const templateCompiled = _.template(templateHtml);
             const renderedTemplate = templateCompiled({
-                adminmessage: ad_message,
+                adminmessage: valid.message,
                 alertclass: 'alert-danger'
             });
             document.getElementById('message-admin').innerHTML = renderedTemplate;
@@ -115,7 +124,6 @@ function save_form_admin_booking() {
         success: function (response) {
             
             let admin_message = response.message;
-
             
             document.getElementById('message-admin').innerHTML = '';
         
@@ -134,18 +142,55 @@ function save_form_admin_booking() {
                     templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/admin-response-model.html';
                     break;
             }
-          
-        
+            
             jQuery.get(templateUrl, function (templateHtml) {
                 const templateCompiled = _.template(templateHtml);
                 const renderedTemplate = templateCompiled({
                     adminmessage: admin_message,
-                    alertclass: 'alert-primary',
+                    alertclass: response.resolution !== 1 ? 'alert-danger' : 'alert-primary',
                     day_id: response.day_id,
                     timeslot_id: response.timeslot_id
                 });
                 document.getElementById('message-admin').innerHTML = renderedTemplate;
-            
+            });
+
+            if(response.resolution !== 1)
+            {
+                if (response.resolution === 3 || response.resolution === 5) {
+                    proceedButton.on('click', function () {
+                        const action = response.resolution === 3 ? 'tfip_unblock_day' : 'tfip_unblock_timeslot';
+                        const idKey = response.resolution === 3 ? 'day_id' : 'timeslot_id';
+                        const idValue = $(this).data(idKey.replace('_', '-'));
+        
+                        $.ajax({
+                            url: TFIP_Ajax_Obj.ajaxUrl,
+                            method: 'POST',
+                            data: {
+                                action: action,
+                                [idKey]: idValue,
+                                security: TFIP_Ajax_Obj.nonce
+                            },
+                            success: function (res) {
+                        
+                                const messageElement = document.getElementById('a-message');
+        
+                                if (res.resolution === 1) {
+                                    messageElement.textContent = res.message;
+                                    proceedButton.hide();
+
+
+                                } else {
+                                    messageElement.innerHTML = res.message + " . Please try again or refresh page";
+                                }
+                            },
+                            error: function () {
+                                alert('An error occurred while processing the booking.');
+                            }
+                        });
+                    });
+                }
+            }else
+            {
                 jQuery(document).ready(function ($) {
                     const proceedButton = $('#proceed-booking-btn');
 
@@ -160,61 +205,8 @@ function save_form_admin_booking() {
                         hide_show_layers(['container-timeslots-bookings'])
                         PrintDayBookings(dateTimestamp)
                     }
-
-                    if (response.resolution === 3 || response.resolution === 5) {
-                        proceedButton.on('click', function () {
-                            const action = response.resolution === 3 ? 'tfip_unblock_day' : 'tfip_unblock_timeslot';
-                            const idKey = response.resolution === 3 ? 'day_id' : 'timeslot_id';
-                            const idValue = $(this).data(idKey.replace('_', '-'));
-            
-                            $.ajax({
-                                url: TFIP_Ajax_Obj.ajaxUrl,
-                                method: 'POST',
-                                data: {
-                                    action: action,
-                                    [idKey]: idValue,
-                                    security: TFIP_Ajax_Obj.nonce
-                                },
-                                success: function (res) {
-                           
-                                    const messageElement = document.getElementById('a-message');
-            
-                                    if (res.resolution === 1) {
-                                        messageElement.textContent = res.message;
-                                        proceedButton.hide();
-
-
-                                    } else {
-                                        messageElement.innerHTML = res.message + " . Please try again or refresh page";
-                                    }
-                                },
-                                error: function () {
-                                    alert('An error occurred while processing the booking.');
-                                }
-                            });
-                        });
-                    }
-                    
-                    // const show_list = [
-                    //     'container-timeslots-bookings'
-                    // ]
-                    // hide_show_layers(show_list)
-                    // ajax_admin_call_calendar(-1, dateid);
                 });
-            });
-            
-
-            //HERE
-            // ajax_admin_call_calendar(-1, dateid);
-            // const show_list = ['admin-calendario', 'booking-form-caller']
-            // hide_show_layers(show_list)
-
-            // const [day, month, year] = dateid.split("-");
-
-            // const dateObj = new Date(`${year}-${month}-${day}T00:00:00`);
-            // const timestamp = dateObj.getTime() / 1000;
-
-            // PrintDayBookings(timestamp)
+            }
         },
         error: function (xhr, status, error) {
             console.error('AJAX error:', error);
@@ -364,6 +356,28 @@ function convert_date_to_string(times_date)
     return dateStr
 }
 
+function deleteBooking(idBooking)
+{
+    jQuery.ajax({
+        url: TFIP_Ajax_Obj.ajaxUrl,
+        method: 'POST',
+        data: {
+            action: 'tfip_admin_delete_booking',
+            nonce: TFIP_Ajax_Obj.nonce,
+            bookingId: idBooking
+        },
+        success: function(response) {
+            
+            console.log(response)
+
+            PrintDayBookings(response.day_id);
+            
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX error:', error);
+        }
+    });
+}
 
 function load_form_admin_booking(location, origin = 0, idday = null, idtimeslot = null, bookingdata = null) {
 
@@ -991,455 +1005,3 @@ function ajax_admin_call_calendar(direction = null, date = null) {
     });
   }
   
-
-
-// function ajax_call_calendar(_maxnum)
-// {
-//     jQuery.ajax({
-//         url : ajaxUrl,
-//         method: 'POST',
-//         data: {
-//             action: 'get_calendar_html',
-//             maxnum: _maxnum
-//         },
-//         success: function(response) {
-
-//             jQuery('#container-list-events').html(response);
-
-//         },
-//         error: function(xhr, status, error) {
-//             console.error(error);
-//         }
-//     });
-// }
-
-
-// function BookNoEvent()
-// {
-//     var date = document.getElementById('client_date').value;
-//     var time = document.getElementById('client_time').value;
-
-//     jQuery.ajax({
-//         url : ajaxUrl,
-//         method: 'POST',
-//         dataType: 'json',
-//         data: {
-//             action: 'tfip_getBookingData',
-//             bookingdate: date,
-//             bookingtime: time
-//         },
-//         success: function(response) {
-
-
-//             var succeded = response.succeded;
-//             var htmlToPrint = response.htmlToPrint;
-
-//             if(succeded == 1)
-//             {
-//                 jQuery('#container-booking').html(htmlToPrint);
-//             }else
-//             {
-//                 jQuery('#error-booking-noevent').html(htmlToPrint);
-//             }
-
-
-//         },
-//         error: function(xhr, status, error) {
-//             console.error(error);
-//         }
-//     });
-// }
-
-
-// function RetrieveBooking(el)
-// {
-//     var _bookingid = el.getAttribute('data-booking-id');
-
-//     document.getElementById('single-booking').innerHTML = "";
-
-//     jQuery.ajax({
-//         url : ajaxUrl,
-//         method: 'POST',
-//         dataType: 'json',
-//         data: {
-//             action: 'tfipf_return_edit_booking_form_ajax',
-//             bookingid: _bookingid,
-//         },
-//         success: function(response) {
-
-
-//             var succeded = response.succeded;
-//             var htmlToPrint = response.htmlToPrint;
-//             var date_id = response.date_id;
-
-//             if(succeded == 1)
-//             {
-//                 jQuery('#single-booking').html(htmlToPrint);
-//             }else
-//             {
-//                 jQuery('#single-booking').html(htmlToPrint);
-//             }
-
-
-//             jQuery('#date_id').datepicker({
-//                 autoclose: true,
-//                 format: "dd/mm/yy",
-//                 beforeShowDay: function(date) {
-
-//                     var nowDate = new Date(date_id + 'T00:00:00');
-
-//                     if (date.getTime() === nowDate.getTime()) {
-//                         return [true, 'highlight-date', 'day'];
-//                     } else {
-//                         return [true, '', ''];
-//                     }
-//                 }
-//             }).datepicker('update', new Date(date_id + 'T00:00:00' ));
-
-//         },
-//         error: function(xhr, status, error) {
-//             console.error(error);
-//         }
-//     });
-// }
-
-
-// function save_admin_booking()
-// {
-//     var formdata = serializeForm('add-booking-admin-form');
-//     var jsonData = {};
-
-//     document.getElementById('message-admin').innerHTML = '';
-//     var valid = validateFormAdminBooking('add-booking-admin-form');
-
-//     if(valid)
-//     {
-//         formdata.forEach(element => {
-
-            
-//             if(element.name.toLowerCase() == "phone")
-//             {
-            
-//                 const phoneNumber = itln.getNumber();
-//                 jsonData[element.name] = phoneNumber;
-                
-//             }else
-//             {
-//                 jsonData[element.name] = element.value;
-//             }
-            
-            
-//         });
-    
-    
-//         jQuery.ajax({
-//             url: ajaxUrl,
-//             method: 'POST',
-//             dataType: 'json',
-//             data: {
-//                 action: 'tfipf_admin_create_booking',
-//                 formdata: JSON.stringify(jsonData) 
-//             },
-//             success: function(response) {
-    
-    
-//                 var succeded = response.succeded;
-//                 var ddate = response.date_id;
-    
-    
-//                 if(succeded == 1)
-//                 {
-//                     document.getElementById('message-admin').innerHTML = '<div class="alert alert-success" role="alert"> \
-//                         La prenotazione e\' stata salvata! \
-//                     </div>';
-
-//                     CleanFormAdminBooking('add-booking-admin-form');
-//                     ajax_admin_call_calendar(3, ddate);
-//                     PrintDayBookings(ddate);
-
-//                 }else
-//                 {
-//                     document.getElementById('message-admin').innerHTML= '<div class="alert alert-danger" role="alert"> \
-//                         La prenotazione non e\' stata salvata: ' + response.message  + ' \
-//                     </div>';
-//                 }
-                
-                
-    
-//             },
-//             error: function(xhr, status, error) {
-//                 console.error(error);
-    
-//             }
-//         });
-//     }else
-//     {
-//         document.getElementById('message-admin').innerHTML= '<div class="alert alert-danger" role="alert"> \
-//                         Errore nel form di creazione della prenotazione \
-//                     </div>';
-//     }
-
-    
-// }
-
-
-
-
-
-
-// function CleanFormAdminBooking(formId) {
-
-//     var form = document.getElementById(formId);
-//     var elements = form.elements;
-
-//     for (var i = 0; i < elements.length; i++) {
-//         var element = elements[i];
-
-//         if(element.classList.contains('iti__search-input') || element.name.toLowerCase() == "code" || element.tagName.toLowerCase() == "button")
-//         {
-//             continue;
-//         }else
-//         {
-//             switch (element.tagName.toLowerCase()) {
-//                 case 'select':
-//                 {
-//                     element.value = 0
-//                 }
-//                 break;
-//                 default:
-//                 {
-//                     element.value = "";
-//                 }
-//                break;
-//             }
-//         }
-
-//     }
-// }
-
-
-// function serializeForm(formId) {
-    
-//     var form = document.getElementById(formId);
-//     var formData = [];
-//     var elements = form.elements;
-
-//     for (var i = 0; i < elements.length; i++) {
-//         var element = elements[i];
-//         if (element.tagName.toLowerCase() !== 'button' && element.name) {
-//             if (element.type === 'checkbox' || element.type === 'radio') {
-//                 if (element.checked) {
-//                     formData.push({ name: element.name, value: element.value });
-//                 }
-//             } else if (element.type === 'select-multiple') {
-//                 for (var j = 0; j < element.options.length; j++) {
-//                     if (element.options[j].selected) {
-//                         formData.push({ name: element.name, value: element.options[j].value });
-//                     }
-//                 }
-//             } else {
-//                 formData.push({ name: element.name, value: element.value });
-//             }
-//         }
-//     }
-
-//     return formData;
-// }
-
-
-// function save_edit_form_data (){
-//     document.getElementById('edit_alert_booking').innerHTML = "";
-//     var formData = serializeForm('editBookingForm');
-//     var res = validateFormAdminBooking('editBookingForm')
-   
-//     if(res)
-//     {
-//         var jsonData = {};
-
-//         formData.forEach(element => {
-//             if(element.name.toLowerCase() == "phone")
-//             {
-            
-//                 const phoneNumber = iti.getNumber();
-//                 jsonData[element.name] = phoneNumber;
-                
-//             }else
-//             {
-//                 jsonData[element.name] = element.value;
-//             }
-//         });
-
-
-//         jQuery.ajax({
-//             url: ajaxUrl,
-//             method: 'POST',
-//             dataType: 'json',
-//             data: {
-//                 action: 'ifpsave_edit_booking', // WordPress action hook
-//                 formData: JSON.stringify(jsonData) // Convert JSON object to string
-//             },
-//             success: function(response) {
-
-//                 var succeded = response.succeded;
-//                 var htmlToPrint = response.htmlToPrint;
-//                 var newdate = response.newdate;
-
-//                 jQuery('#single-booking').html(htmlToPrint);
-//                 PrintDayBookings(newdate)
-
-//             },
-//             error: function(xhr, status, error) {
-//                 console.error(error);
-
-//             }
-//         });
-//     }else
-//     {
-//         document.getElementById('edit_alert_booking').innerHTML = '<div class="alert alert-danger" role="alert"> \
-//                         Errore nel form di modifica della prenotazione \
-//                     </div>';
-//     }
-
-    
-// };
-
-
-
-
-
-
-// function EditMaxCapacity(el)
-// {
-//     var timestamp = el.getAttribute('data-id');
-//     var maxp = el.getAttribute('data-max');
-
-//     var reset = document.getElementById('reset_' + timestamp);
-//     reset.classList.remove('ciao');
-//     reset.classList.add('ciao');
-
-//     var edit = document.getElementById('edit_' + timestamp);
-//     edit.classList.remove('ciao');
-//     edit.classList.add('ciao');
-
-//     edit.innerHTML = 
-//     '<div class="row">\
-//         <div class="col-8">\
-//             <input value="' + maxp + '" id="input_timestamp_edit" class="form-control" />\
-//         </div>\
-//         <div class="col-4 text-right">\
-//             <i onclick="IpdEditMaxCapacity(this)" data-id="' + timestamp + '" class="fa fa-check text-success"></i>\
-//         </div>\
-//     </div>';
-
-
-// }
-
-// function Deletebooking(elD)
-// {
-//     jQuery('#confirmDeleteModal').modal('show');
-//     var idbooking = elD.getAttribute('data-booking-id');
-//     var ddate = elD.getAttribute('data-ddate');
-    
-//     jQuery('#confirmDeleteBtn').attr('data-bk', idbooking);
-//     jQuery('#confirmDeleteBtn').attr('data-ddate', ddate);
-// }
-
-// function CloseModal()
-// {
-//     jQuery('#confirmDeleteModal').modal('hide');
-// }
-
-// function ConfirmDeleteBooking(el)
-// {
-//     var idbooking = el.getAttribute('data-bk');
-//     var ddate = el.getAttribute('data-ddate');
-
-
-//     jQuery.ajax({
-//         url: ajaxUrl,
-//         method: 'POST',
-//         data: {
-//             action: 'tfipf_delete_booking',
-//             booking_id: idbooking
-//         },
-//         success: function(response) {
-            
-//             jQuery('#confirmDeleteModal').modal('hide');
-
-//             ajax_admin_call_calendar(3, ddate);
-//             PrintDayBookings(ddate)
-
-
-
-//         },
-//         error: function(xhr, status, error) {
-//             console.error(error);
-//         }
-//     });
-// }
-
-
-// function BookConf(elN, elD){
-
-  
-//     jQuery.ajax({
-//         url: ajaxUrl,
-//         method: 'POST',
-//         //dataType: 'html',
-//         data: {
-//             action: 'tfipf_conf_book',
-//             confirm: elN,
-//             date_d: elD
-//         },
-//         success: function(response) {
-
-//           ajax_admin_call_calendar(3, elD);
-//           PrintDayBookings(elD);
-
-//         },
-//         error: function(xhr, status, error) {
-//             console.error(error);
-//         }
-//     });
-    
-// };
-
-
-// function IpdEditMaxCapacity (el){
-
-//     var timestamp = el.getAttribute('data-id');
-//     var capacity = document.getElementById('input_timestamp_edit').value;
-
-//     if(parseInt(capacity) && parseInt(capacity) > 0)
-//     {
-//         jQuery.ajax({
-//             url: ajaxUrl,
-//             method: 'POST',
-//             dataType: 'html',
-//             data: {
-//                 action: 'ipf_editMaxCapacity',
-//                 daydate: timestamp,
-//                 capacity: capacity
-//             },
-//             success: function(response) {
-
-//                 jQuery('#edit_' + timestamp).html(response);
-
-//                 var reset = jQuery('#reset_' + timestamp);
-//                 reset.removeClass('ciao').addClass('ciao');
-
-//                 var edit = jQuery('#edit_' + timestamp);
-//                 edit.removeClass('ciao').addClass('ciao');
-
-
-//                 ajax_admin_call_calendar(3);
-
-//             },
-//             error: function(xhr, status, error) {
-//                 console.error(error);
-
-//             }
-//         });
-//     }
-
-// };
