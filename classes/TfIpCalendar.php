@@ -30,6 +30,8 @@ class TfIpCalendar {
         add_action( 'wp_ajax_tfip_get_all_bookings_calendar', array($this, 'TFIP_Calendar_all_bookings_calendar'));
         
         add_action('wp_ajax_tfip_get_form_timeslots_booking_admin', array($this, 'TFIP_Calendar_Get_Timeslots_Date'));
+        add_action('wp_ajax_nopriv_tfip_get_form_timeslots_booking_admin', array($this, 'TFIP_Calendar_Get_Timeslots_Date'));
+
 
         add_action( 'wp_ajax_tfip_unblock_day', array($this, 'TFIP_Calendar_Unblock_Day'));
         add_action( 'wp_ajax_tfip_unblock_timeslot', array($this, 'TFIP_Calendar_Unblock_Timeslot'));
@@ -62,8 +64,8 @@ class TfIpCalendar {
         // add_action( 'wp_ajax_tfipf_conf_book', array( $this, 'tfipf_conf_book'));
         // add_action( 'wp_ajax_tfipf_delete_booking', array( $this , 'tfipf_delete_booking'));
 
-        // add_action( 'wp_ajax_get_calendar_html', array($this, 'get_calendar_html'));
-        // add_action( 'wp_ajax_nopriv_get_calendar_html', array($this, 'get_calendar_html'));
+        add_action( 'wp_ajax_get_calendar_html', array($this, 'get_calendar_html'));
+        add_action( 'wp_ajax_nopriv_get_calendar_html', array($this, 'get_calendar_html'));
 
         // add_action( 'wp_ajax_tf_ipf_get_admin_calendar', array($this, 'get_admin_calendar'));
 
@@ -386,6 +388,8 @@ class TfIpCalendar {
         $timestamp = $today->getTimestamp(); 
         $slotid = 0;
         $slot_time = null;
+        $timedslot = 0;
+
         
         if (isset($_POST["date"]) && $_POST["date"] !== "") {
 
@@ -402,6 +406,11 @@ class TfIpCalendar {
         if(isset($_POST["time_s"]) && $_POST["time_s"] !== "")
         {
             $slot_time = sanitize_text_field( $_POST["time_s"]);
+        }
+
+        if(isset($_POST["timedslot"]) && $_POST["timedslot"] !== "")
+        {
+            $timedslot = intval( $_POST["timedslot"]);
         }
         
         
@@ -442,20 +451,34 @@ class TfIpCalendar {
             $start = new DateTime($timeslots[0]['start']);
             $end = new DateTime($timeslots[0]['end']);
 
-            $interval = new DateInterval('PT15M'); 
-            $period = new DatePeriod($start, $interval, $end); 
-            
-            foreach ($period as $time) {
+            if($timedslot == 0)
+            {
+                $interval = new DateInterval('PT15M'); 
+                $period = new DatePeriod($start, $interval, $end); 
                 
+                foreach ($period as $time) {
+                    
+                    $slot_ = [
+                        'ids' => $timeslots[0]['ids'],
+                        'objt' => $time->format('H:i'),
+                        'valt' => $time->format('H:i'),
+                        'sel' => $slot_time != null && $slot_time == $time->format('H:i') ? 1 : 0
+                    ];
+                    
+                    $slots[] = $slot_; 
+                }
+            }else
+            {
                 $slot_ = [
                     'ids' => $timeslots[0]['ids'],
-                    'objt' => $time->format('H:i'),
-                    'valt' => $time->format('H:i'),
-                    'sel' => $slot_time != null && $slot_time == $time->format('H:i') ? 1 : 0
+                    'objt' =>  $start->format('H:i') . " - " . $end->format('H:i'),
+                    'valt' => $start->format('H:i'), 
+                    'sel' => 1
                 ];
-                
+
                 $slots[] = $slot_; 
             }
+            
 
             //$slots[] = ['objt' => $end->format('H:i'), 'valt' => $end->format('H:i')];
             
@@ -473,7 +496,7 @@ class TfIpCalendar {
                     'ids' => $ts['ids'],
                     'objt' => $start->format('H:i') . " - " . $end->format('H:i'),
                     'valt' => $start->format('H:i'),
-                    'sel' => $ts['ids'] == $slotid ? 1 : 0
+                    'sel' => $ts['ids'] != null && $ts['ids'] == $slotid ? 1 : 0
                 ];
 
                 $slots[] = $slot_; 

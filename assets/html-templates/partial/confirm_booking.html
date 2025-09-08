@@ -1,0 +1,43 @@
+<% if (resolution == 1) { %>
+    <div class="prenota-online">
+        <form id="confirm_booking_form">
+            <input id="idbooking" style="display:none;" name="idbooking" value="<%- booking.idbooking %>" />
+            
+            <div class="form-group form-prenotazione">
+                <label for="code">
+                    <div class="alert alert-info info-whatsapp" role="alert">
+                        Inserisci il <b>codice di conferma</b> che arriverà entro 2 minuti <b>via Whatsapp</b> 
+                        al numero di telefono che hai fornito: <i class="fa-solid fa-arrow-down rimbalza"></i>
+                    </div>
+                </label>
+    
+                <input type="text"    style="display: none;" id="identification" name="identification" value="<%- booking.identification %>" required>
+                <input type="number"  style="display: none;" id="participants"   name="participants"   value="<%- booking.participants %>"  required>
+                <input type="number"  style="display: none;" id="timeslotid"     name="timeslotid"     value="<%- booking.timeslotid %>" required>
+                <input type="number"  style="display: none;" id="dayid"          name="dayid"          value="<%- booking.dayid %>" required>
+                <input type="text"    style="display: none;" id="phone"          name="phone"          value="<%- booking.phone %>" required>
+                <input type="text"    style="display: none;" id="extra"          name="extra"          value="<%- booking.extra %>" required>
+                <input type="number"  style="display: none;" id="eventid"        name="eventid"        value="<%- booking.eventid %>" required>
+                <input type="text"    style="display: none;" id="codeb"          name="codeb"          value="<%- booking.codeb %>" required>
+                <input type="text"    style="display: none;" id="timebook"       name="timebook"       value="<%- booking.timestart %>" required>
+    
+                <input type="text" class="form-control codice-whatsapp" id="code" name="code" 
+                       placeholder="000000" maxlength="6" 
+                       pattern="[A-Za-z0-9]{6}" 
+                       title="Please enter a 6-character alphanumeric code" 
+                       required>
+            </div>
+    
+            <button type="button" class="btn btn-success invia-prenotazione" onclick="ConfirmCodeBooking()">
+                Conferma prenotazione
+            </button>
+        </form>
+    </div>
+    <% } else { %>
+    <div class="prenota-online">
+        <div class="alert alert-warning" role="alert">
+            <%- message %>
+        </div>
+    </div>
+    <% } %>
+    

@@ -1,0 +1,52 @@
+<div id="form-space">
+    <div class="row">
+        <div class="col-12 alert alert-warning text-center"  id="client-form-advise" style="display: none;">
+            
+        </div>
+    </div>
+    <form id="regForm" class="form-prenota-evento" >
+        <div class="tab form-row">
+
+            <input id="timeslotid"      name="timeslotid"       value="<%- typeof timeslotid !== 'undefined' ? timeslotid : '' %>" />
+            <input id="eventid"         name="eventid"          value="<%- typeof eventid !== 'undefined' ? eventid : '' %>" />
+            <input id="dayid"           name="dayid"            value="<%- typeof dayid !== 'undefined' ? dayid : '' %>" />
+            <input id="timeslottime"    name="timeslottime"     value="<%- typeof timeslottime !== 'undefined' ? timeslottime : '' %>" />
+
+            
+            <div class="form-group col-12">
+                <label for="nomecompleto">Nome completo</label>
+                <input type="text" id="identification" name="identification"  class="form-control" placeholder="Nome completo" >
+            </div>
+            <div class="form-group ">
+                <label for="exampleFormControlSelect1">Persone</label>
+                <input type="number" min="1" max="20" class="form-control"  id="guests" name="guests" placeholder="Numero di partecipanti">
+            </div>
+        </div>
+        <div class="tab">
+            <div class="form-group">
+                <label for="numerotelefono">N. di Telefono</label><br>
+                <input type="tel" class="form-control" id="idphone" name="idphone"><br>
+                <small id="telefono" class="form-text text-muted">Riceverai un messaggio di conferma per la tua prenotazione.</small>
+            </div>
+            <div class="form-group">
+                <label >Richieste particolari</label>
+                <textarea id="extramessage" name="extramessage" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="condition" name="condition" value="0" >
+                <label class="form-check-label" for="condition">
+
+                <!-- onclick="SetValueCheckBox(this)" -->
+                Accetto le <a>condizioni di utilizzo</a> e ho letto l\'<a>informativa privacy</a>.
+                </label>
+            </div>
+        </div>
+        <div style="overflow:auto;">
+            <button type="button" id="nextBtn" onclick="submitBooking()" class="btn btn-success">Conferma</button>
+        </div>
+        <div style="text-align:center;margin-top:40px;">
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+        </div>
+    </form>

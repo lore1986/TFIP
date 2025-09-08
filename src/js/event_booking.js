@@ -1,160 +1,189 @@
 
-function SetValueCheckBox(el)
+function LoadBaseClientBookingForm(eventid, timeslotid, dayid, timeslottime = null)
 {
-    if(el.value == 1)
-    {
-        document.getElementById('condition').value = 0;
-        el.checked = false;
-    }else
-    {
-        el.checked = true;
-        document.getElementById('condition').value = 1;
-    }
+    const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/partial/base_booking_form.html';
+            
+        jQuery.get(templateUrl, function(templateHtml) {
 
+            const formTemplate = _.template(templateHtml);
+            const renderedFormTemplate = formTemplate({ 
+                eventid: eventid,
+                timeslotid: timeslotid,
+                dayid: dayid,
+                timeslottime: timeslottime
+            });
 
+            const formSpace = document.getElementById('tmp-loaded-form');
+            formSpace.innerHTML = renderedFormTemplate; 
 
-}
+            const phoneInput = document.querySelector("#idphone");
 
-function showTab(n) {
-
-    var alltabs = document.getElementsByClassName("tab");
-
-    alltabs[n].style.display = "block";
-    if (n == 0) {
-        document.getElementById("prevBtn").style.display = "none";
-    } else {
-        document.getElementById("prevBtn").style.display = "inline";
-    }
-    if (n == (alltabs.length - 1)) {
-        document.getElementById("nextBtn").innerHTML = "Conferma prenotazione";
-    } else {
-        document.getElementById("nextBtn").innerHTML = "Avanti";
-    }
-
-    fixStepIndicator(n)
-}
-
-function fixStepIndicator(n) {
-
-    var i, allsteps = document.getElementsByClassName("step");
-
-    for (i = 0; i < allsteps.length; i++) {
-        allsteps[i].className = allsteps[i].className.replace(" active", "");
-    }
-
-    allsteps[n].className += " active";
-}
-
-function nextPrev(n) {
-
-    var alltabs = document.getElementsByClassName("tab");
-
-    if (n == 1 && !validateForm()) return false;
-
-    alltabs[currentTab].style.display = "none";
-    currentTab = currentTab + n;
-
-
-    if (currentTab >= alltabs.length) {
-
-  
-        var form = document.getElementById("regForm");
-        const formData = new FormData(form);
-
-        const jsonData = {};
-        formData.forEach(function(value, key) {
-            if(key == "uphone")
-            {
-
-
-                //value = phoneNumber;
-                const countryData = iti.getSelectedCountryData();
-                jsonData["countrycode"] = countryData.iso2;
-                jsonData["uphone"] = value;
-                jsonData["dialCode"] = countryData.dialCode;
-            }
-            jsonData[key] = value;
+            window.iti = window.intlTelInput(phoneInput, {
+                initialCountry: "it",  
+                preferredCountries: ["it", "us", "gb"],
+                separateDialCode: true,
+                loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.10.0/build/js/utils.js"),
+            });
         });
+}
 
-        BookingEventForm(jsonData);
+function submitBooking() {
+    
+    const blockAdvise = document.getElementById('client-form-advise');
+    blockAdvise.style.display = 'none';
+
+
+    const identification   = document.getElementById("identification").value.trim();
+    const guests  = document.getElementById("guests").value.trim();
+    const idphone = document.getElementById("idphone");
+    const extramessage = document.getElementById("extramessage").value; //check this one
+    const condition = document.getElementById("condition").checked;
+
+
+    const eventid = document.getElementById("eventid").value;
+    const timeslotid = document.getElementById("timeslotid").value;
+    const dayid = document.getElementById("dayid").value;
+    const timeslottime =  document.getElementById("timeslottime").value;
+
+    const iti = window.iti;
+
+    let valid = true;
+    let messages = [];
+    const errorMap = ["Invalid number", "Invalid country code", "Too short", "Too long", "Invalid number"];
+
+
+    if (!identification) {
+        valid = false;
+        messages.push("Nome completo è obbligatorio.");
+    }
+    if (!guests || isNaN(guests) || parseInt(guests) < 1) {
+        valid = false;
+        messages.push("Inserisci un numero di partecipanti valido (1-20).");
+    }
+
+
+    if (!idphone.value.trim() || !iti.isValidNumber()) {
+        valid = false;
+        const errorCode = iti.getValidationError();
+        const msg = errorMap[errorCode] || "Invalid number";
+        messages.push(msg);
+    }
+    if (!condition) {
+        valid = false;
+        messages.push("Devi accettare le condizioni di utilizzo.");
+    }
+
+    if (!valid) {
+        alert(messages.join("\n"));
         return false;
     }
 
-    showTab(currentTab);
-}
+    const phoneNumber = iti.getNumber();
 
-function validateForm() {
 
-    var x, y, i, valid = true;
-    x = document.getElementsByClassName("tab");
-    y = x[currentTab].getElementsByTagName("input");
+    let dataForm = {
 
-    for (i = 0; i < y.length; i++) {
+        timeslotid: timeslotid,
+        eventid: eventid,
+        dayid: dayid,
+        timeslottime: timeslottime,
 
-        if (y[i].value == "" && y[i].name != "newsletter" && !y[i].classList.contains('iti__search-input')) {
-            y[i].className += " invalid";
-            valid = false;
-        }
+        extramessage: extramessage,
+        identification: identification,
+        guests: guests,
+        idphone: phoneNumber,
+        condition: condition ? 1 : 0,
+    };
 
-        if(y[i].name == "uguest")
-        {
-            var maxParticipants = y[i].getAttribute('data-max');
-            maxParticipants = parseInt(maxParticipants);
+    console.log(dataForm)
 
-            if(parseInt(y[i].value) > maxParticipants)
+    jQuery.ajax({
+        url : TFIP_Ajax_Obj.ajaxUrl,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'tfip_confirmBooking',
+            'data_form': dataForm  
+        },
+        success: function(response) {
+
+            console.log(response);
+
+            if(response.resolution == 1)
             {
-                y[i].className += " invalid";
-                valid = false;
+                const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/partial/confirm_booking.html';
+
+                jQuery.get(templateUrl, function (templateHtml) {
+                    const templateCompiled = _.template(templateHtml);
+                    const renderedTemplate = templateCompiled(
+                        {
+                            message: response.message,
+                            resolution: response.resolution,
+                            booking: response.obj
+                        }
+                    );
+                    document.getElementById('form-space').innerHTML = renderedTemplate;
+                });
+
+
+            }else
+            {
+                const blockAdvise = document.getElementById('client-form-advise');
+                blockAdvise.style.display = 'block';
+                blockAdvise.innerText = response.message;
             }
+        },
+        error: function(xhr, status, error) {
+            console.error(error);
+            alert("Errore durante l'invio del form. Riprova più tardi.");
         }
-    }
-
-    if (valid) {
-    document.getElementsByClassName("step")[currentTab].className += " finish";
-    }
-
-    return valid;
+    });
 }
 
-
-
-
-// function BookingEventForm(dform)
-// {
-
-//     jQuery.ajax({
-//         url : ajaxurl,
-//         method: 'POST',
-//         dataType: 'json',
-//         data: {
-//             action: 'tfip_confirmBooking',
-//             data_form: dform
-//         },
-//         success: function(response) {
-            
-
-//             var succeded = response.succeded;
-//             var htmlToPrint = response.htmlToPrint;
-//             var code = response.code;
-            
-//             if(succeded == 1)
-//             {
-//                 jQuery("#regForm").html(htmlToPrint);
-//                 const element = document.getElementById("regForm");
-      
-//                 element.scrollIntoView();
-//             }else
-//             {
-//                 //this is temp
-//                 jQuery("#regForm").html(htmlToPrint);
-//             }
-//         },
-//         error: function(xhr, status, error) {
-//             console.error(error);
-//         }
-//     });
-// };
-
+function ConfirmCodeBooking()
+{
+    const identification = document.getElementById("identification").value.trim();
+    const participants = document.getElementById("participants").value.trim();  
+    const timeslotid = document.getElementById("timeslotid").value.trim();
+    const dayid = document.getElementById("dayid").value.trim();        
+    const phone = document.getElementById("phone").value.trim();       
+    const extra = document.getElementById("extra").value.trim();       
+    const eventid = document.getElementById("eventid").value.trim();   
+    const bookingcode = document.getElementById("codeb").value.trim();   
+    const timebooking = document.getElementById("timebook").value.trim(); 
     
+    let dataForm = {
+        identification: identification,
+        participants: participants,
+        timeslotid: timeslotid,
+        dayid: dayid,
+        phone: phone,
+        extra: extra,
+        eventid: eventid,
+        bcode: bookingcode,
+        timebook: timebooking
+    };
 
+    console.log(dataForm);
     
+    jQuery.ajax({
+        url : TFIP_Ajax_Obj.ajaxUrl,
+        method: 'POST',
+        dataType: 'json',
+        data: {
+            action: 'tfip_confirmBookingClient',
+            'data_form': dataForm  
+        },
+        success: function(response) {
+
+            console.log(response);
+
+            
+        },
+        error: function(xhr, status, error) {
+            console.error(error);
+            alert("Errore durante l'invio del form. Riprova più tardi.");
+        }
+    });
+
+}

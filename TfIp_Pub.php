@@ -21,6 +21,8 @@ include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Templater.php');
 // Shortcode and script actions
 add_action('wp_enqueue_scripts', 'TFIP_user_enqueue_scripts');
 add_action('admin_enqueue_scripts', 'TFIP_admin_enqueue_scripts');
+//add_action('admin_enqueue_scripts', 'TFIP_enqueue_admin_scripts_event');
+
 
 add_shortcode('tfIpfCalendarShort', 'tfIpf_calendar_all_event_shortcode');
 add_shortcode('tfIpfNoEventBooking', 'TFIP_Pub_No_Event_Booking_Shortcode_Action');
@@ -34,7 +36,7 @@ add_filter("plugin_action_links_$plugin", [$admin, 'tfipf_add_settings_link']);
 $database = new TFIP_Database();
 $calendar = new TfIpCalendar($database);
 $H = new TFIP_Templater();
-$event = new TfIpEvent();
+$event = new TfIpEvent($database);
 $manager = new TfIpManager();
 $bookings = new TfIpBooking($database, $manager);
 
@@ -90,30 +92,42 @@ function tfip_uninstall_handler() {
 }
 
 function TFIP_admin_enqueue_scripts($hook) {
-    
+    global $post_type;
    
     wp_enqueue_style('tfip_admin_css', plugin_dir_url(__FILE__) . 'assets/css/TFIP-admin.css');
-
     
     wp_enqueue_style('flatpickr-css', 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css');
     wp_enqueue_script('flatpickr-js', 'https://cdn.jsdelivr.net/npm/flatpickr', array(), null, true);
 
-    // wp_enqueue_style('pikaday', 'https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css');
-    // wp_enqueue_script('moment-js', 'https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js', [], null, true); 
-    // wp_enqueue_script('pikaday', 'https://cdn.jsdelivr.net/npm/pikaday/pikaday.js', [], null, true);
-
     wp_enqueue_script('tfipf-admin-script', plugin_dir_url(__FILE__) . 'src/js/tfipf-admin.js', [], null, true);
-    wp_localize_script('tfipf-admin-script', 'ajaxurl', admin_url('admin-ajax.php'));
+    wp_add_inline_script('tfipf-admin-script', 'ajaxurl', admin_url('admin-ajax.php'));
+
+
+    if (($hook === 'post-new.php' || $hook === 'post.php') && $post_type === 'tfipfevent') {
+
+        // JS
+        wp_enqueue_script(
+            'TfIpAdmin_js',
+            plugin_dir_url(__FILE__) . 'src/js/tfip_admin_js.js',
+            [],//array('jquery', 'underscore', 'intlTelInput'),
+            null,
+            true // put in footer
+        );
+
+        // Localize variables
+        wp_localize_script('TfIpAdmin_js', 'TFIP_Ajax_Obj', array(
+            'ajaxUrl'       => admin_url('admin-ajax.php'),
+            'templatesUrl'  => plugin_dir_url(__FILE__)  . 'assets/html-templates/',
+            'nonce'         => wp_create_nonce('tfip'),
+            'tifpBootstrap' => 'tfipf-bootstrap'
+        ));
+    }
 }
 
 
 function TFIP_user_enqueue_scripts() {
 
     wp_enqueue_style('tfipf-bootstrap', plugin_dir_url(__FILE__) . 'assets/css/TFIP-boostrap.css');
-
-    // wp_enqueue_style('pikaday', 'https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css');
-    // wp_enqueue_script('moment-js', 'https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js', [], null, true); 
-    // wp_enqueue_script('pikaday', 'https://cdn.jsdelivr.net/npm/pikaday/pikaday.js', [], null, true);
 
     wp_enqueue_style('flatpickr-css', 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css');
     wp_enqueue_script('flatpickr-js', 'https://cdn.jsdelivr.net/npm/flatpickr', array(), null, true);
@@ -124,11 +138,14 @@ function TFIP_user_enqueue_scripts() {
     wp_enqueue_style('intlTelInput', 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/css/intlTelInput.min.css');
     wp_enqueue_script('intlTelInput', 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/js/intlTelInput.min.js', array('jquery'), null);
 
-    wp_enqueue_script('TfIpBooking_event_js',  plugin_dir_url(__FILE__) . 'src/js/event_booking.js', array('jquery'));
+    wp_enqueue_script('TfIpBooking_event_js',  plugin_dir_url(__FILE__) . 'src/js/event_booking.js',array('jquery', 'intlTelInput'), null, true );
+    wp_localize_script('TfIpBooking_event_js', 'TFIP_Ajax_Obj', array(
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'templatesUrl' => plugin_dir_url(__FILE__)  . 'assets/html-templates/',
+        'nonce' => wp_create_nonce('tfip'),
+        'tifpBootstrap' => 'tfipf-bootstrap'
+    ));
 
-    
-    
-    
     wp_enqueue_script('TfIpCalendar_js',  plugin_dir_url(__FILE__) . 'src/js/calendar_js.js', array('jquery', 'undescore', 'intlTelInput'), null, false );
     
     wp_localize_script('TfIpCalendar_js', 'TFIP_Ajax_Obj', array(
@@ -137,6 +154,7 @@ function TFIP_user_enqueue_scripts() {
         'nonce' => wp_create_nonce('tfip'),
         'tifpBootstrap' => 'tfipf-bootstrap'
     ));
+
 
 }
 
@@ -147,10 +165,14 @@ function tfIpf_calendar_all_event_shortcode($atts)
 
     ob_start();
     ?>
-    <div class="row">
-        <div id="container-booking" class="col-12" style="display:none;"></div>
-        <div id="container-list-events" class="col-12"></div>
+    <!DOCTYPE html>
+    <div class="TFIP-style">
+        <div class="row ">
+            <div id="container container-booking" class="col-12" style="display:none;"></div>
+            <div id="container-list-events" class="col-12"></div>
+        </div>
     </div>
+
     <script>
         window.onload = function() {
             ajax_call_calendar(<?php echo $max_num; ?>);
@@ -160,87 +182,33 @@ function tfIpf_calendar_all_event_shortcode($atts)
     return ob_get_clean();
 }
 
-
+//this tooo
 function TFIP_Pub_No_Event_Booking_Shortcode_Action()
 {
+    global $database;
     ob_start();
-    ?>
-    <div class="calendario-prenotazione">
-        <div id="container-booking">
-            <div class="date">
-                
-                <input type="text" id="client_date" name="client_date" class="time-input"/>
-                
-                <select id="client_time" name="client_time" class="form-control form-select">
-                    <option value="0">Seleziona orario</option>
-                    <?php
-                    $all_timeslots = get_option('tfip_timeslots', []);
-                    if (!empty($all_timeslots)) {
+    $obj_d = new stdClass();
+    
+    $obj_d->date_str = date('d-m-Y');
+    $obj_d->date_stamp = strtotime($obj_d->date_str);
 
+    $obj_d->timeslots = $database->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($obj_d->date_stamp);
 
-                        if(count($all_timeslots) == 1)
-                        {
-                            $start = esc_attr($all_timeslots[0]['start']);
-                            [$startHour, $startMin] = explode(':', $start);
-                            $end = esc_attr($all_timeslots[0]['end']);
-                            [$endHour, $endMin] = explode(':', $end);
+    if(count($obj_d->timeslots) == 0)
+    {
+        $obj_d->timeslots = get_option('tfip_timeslots', []);
+    }
 
-                            $startMinutes = intval($startHour) * 60 + intval($startMin);
-                            $endMinutes = intval($endHour) * 60 + intval($endMin);
+    extract([ 'objdata' => $obj_d ]);
+    
+    $template = plugin_dir_path(__DIR__) . 'tfIp_Pub/assets/html-templates/partial/booking_no_event.php';
+    
+    if ($template) {
+        include $template;
+    } else {
+        echo '<p>Template not found.</p>';
+    }
 
-                            for ($time = $startMinutes; $time <= $endMinutes; $time += 15) {
-                                $hour = floor($time / 60);
-                                $minute = $time % 60;
-                                $formatted = sprintf('%02d:%02d', $hour, $minute);
-                                echo '<option value="' . esc_attr($formatted) . '">' . esc_html($formatted) . '</option>';
-                            }
-
-                        }else
-                        {
-                            foreach ($all_timeslots as $i => $slot) {
-                                
-                                $start = esc_attr($slot['start']);
-                                [$startHour, $startMin] = explode(':', $start);
-                                $end = esc_attr($slot['end']);
-                                [$endHour, $endMin] = explode(':', $end);
-
-                                $startMinutes = intval($startHour) * 60 + intval($startMin);
-                                $endMinutes = intval($endHour) * 60 + intval($endMin);
-
-                                $hour = floor($startMinutes / 60);
-                                $minute = $startMinutes % 60;
-                                $formatted_start = sprintf('%02d:%02d', $hour, $minute);
-
-                                $hour = floor($endMinutes / 60);
-                                $minute = $endMinutes % 60;
-                                
-                                $formatted_end = sprintf('%02d:%02d', $hour, $minute);
-
-                                echo '<option value="' . esc_attr($formatted_start) . '">' . esc_html($formatted_start . ' - ' . $formatted_end) . '</option>';
-
-                            }
-                        }
-                    }
-                    ?>
-                </select>
-            </div>
-            <button type="button" id="button-no-event-booking" onclick="BookNoEvent()" class="btn btn-success">
-                Prenota
-            </button>
-        </div>
-        <div id="error-booking-noevent"></div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            flatpickr("#client_date", {
-                dateFormat: "d/m/Y",
-                minDate: "today",
-                defaultDate: "today"
-            });
-        });
-    </script>
-    <?php
     return ob_get_clean();
 }
 

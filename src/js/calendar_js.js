@@ -1,3 +1,24 @@
+function ajax_call_calendar(_maxnum)
+{
+    jQuery.ajax({
+        url : TFIP_Ajax_Obj.ajaxUrl,
+        method: 'POST',
+        data: {
+            action: 'get_calendar_html',
+            maxnum: _maxnum
+        },
+        success: function(response) {
+
+            jQuery('#container-list-events').html(response);
+
+        },
+        error: function(xhr, status, error) {
+            console.error(error);
+        }
+    });
+}
+
+
 function validateFormAdminBooking(formId) {
 
 
@@ -23,7 +44,7 @@ function validateFormAdminBooking(formId) {
             continue;
         }
 
-        // check if time is ok
+        // check if time is okvalidateFormAdminBooking
         if (tag === 'select' && name === 'time_booking') {
             if (parseInt(element.value) === 0) {
                 output.message = "L'orario della prenotazione mancante o sbagliato";
@@ -112,6 +133,9 @@ function save_form_admin_booking() {
         jsonData.phone = itln.getNumber();
     }
 
+    console.log(jsonData)
+
+    
     jQuery.ajax({
         url: TFIP_Ajax_Obj.ajaxUrl,
         method: 'POST',
@@ -310,9 +334,10 @@ function CallBookingForm() {
 
 
 
-function updateTimeslots(date, timeslotid = null, booking_time = null) {
+  function updateTimeslots(date, object_name, timeslotid = null, booking_time = null, timedslot = null) {
 
-    
+    console.log(date)
+
     jQuery.ajax({
         url: TFIP_Ajax_Obj.ajaxUrl,
         method: 'POST',
@@ -321,6 +346,7 @@ function updateTimeslots(date, timeslotid = null, booking_time = null) {
             date: date,
             slotid: timeslotid,
             time_s: booking_time,
+            timedslot : timedslot,
             nonce: TFIP_Ajax_Obj.nonce
         },
         success: function(response) {
@@ -331,10 +357,10 @@ function updateTimeslots(date, timeslotid = null, booking_time = null) {
             const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/timeslots-instance-booking-form.html';
             
             jQuery.get(templateUrl, function(templateHtml) {
-     
+    
                 const timeslotTemplate = _.template(templateHtml);
                 const renderedTimeslots = timeslotTemplate({ timeslots: response });
-                const timeslotSelect = document.getElementById('admin_time');
+                const timeslotSelect = document.getElementById(object_name);
                 timeslotSelect.innerHTML = '<option value="0">Seleziona orario</option>'; 
                 timeslotSelect.innerHTML += renderedTimeslots; 
             });
@@ -429,22 +455,23 @@ function load_form_admin_booking(location, origin = 0, idday = null, idtimeslot 
 
         
         var phoneInput = document.querySelector("#admin_phone");
+        
         window.intlTelInput(phoneInput, {
             allowDropdown: true,
             initialCountry: "it",
             autoPlaceholder: "polite",
             separateDialCode: true,
-            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/js/utils.min.js"
+            loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.10.0/build/js/utils.js"),
         });
         
         const dateInput = document.getElementById('admin_date_id');
         dateInput.flatpickr(fpConf);
 
-        updateTimeslots(day_si, idtimeslot, time_booking);
+        updateTimeslots(day_si, 'admin_time', idtimeslot, time_booking);
 
         dateInput.addEventListener('change', function(event) {
             const selectedDate = event.target.value; 
-            updateTimeslots(selectedDate);
+            updateTimeslots(selectedDate, 'admin_time');
         });
 
     });

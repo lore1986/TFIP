@@ -13,7 +13,7 @@ class TFIP_Templater
         add_filter('wp_insert_post_data', array($this, 'TFIP_Templater_Register_Template'));
         add_filter('template_include', array($this, 'TFIP_Templater_Check_Template'));
 
-        $this->templates[0] = array('../template/TFIP_Page_Event.php' => 'Evento');
+        $this->templates[0] = array('../assets/php-templates/TFIP_Page_Event.php' => 'Evento');
         $this->templates[1] = array('../assets/php-templates/TFIP_Page_Admin_Booking.php' => 'Prenotazioni');
     }
 
@@ -76,7 +76,7 @@ class TFIP_Templater
 
         }else if('tfipfevent' == get_post_type())
         {
-            $file = plugin_dir_path( __FILE__ ) . '../template/php-templates/TFIP_Page_Event.php';
+            $file = plugin_dir_path( __FILE__ ) . '../assets/php-templates/TFIP_Page_Event.php';
             return $file;
         }
         

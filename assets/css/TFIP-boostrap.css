@@ -11324,3 +11324,102 @@ body {
     display: none !important;
   }
 }
+
+/*EVENTI*/
+.TFIP-style #container-list-events {margin-bottom: 0px;}
+.TFIP-style .eventi-home {background-color: #FFFFFF; }
+.TFIP-style .eventi-home-cont {height: 100%;}
+.TFIP-style .eventi-home-cont .titolo{padding-top: 25px;}
+.TFIP-style .eventi-home-riga {border-bottom: 1px solid #CCCCCC; padding: 10px 5px 0px 10px; background-color: #ffffff;}
+.TFIP-style .eventi-home-riga a {text-transform: uppercase; font-family: Bebasregular; font-size: 16px; color: #333333; text-decoration: none;}
+.TFIP-style .eventi-home-riga p {text-transform: none; font-family: Georgia; font-size: 14px; margin-bottom: 10px;}
+.TFIP-style .eventi-home-riga p button {padding: 0px 6px; float: right; margin: -7px 0 3px 0;}
+.TFIP-style .evento-sport {border-left: 10px solid #339900;}
+.TFIP-style .evento-sport img {width: 20px; height: 20px; margin-right: 3px;}
+.TFIP-style .evento-music {border-left: 10px solid #9933cc;}
+.TFIP-style .evento-degustazione {border-left: 10px solid #996666;}
+.TFIP-style .evento-music, 
+.TFIP-style .evento-degustazione {line-height: 1.2rem;}
+.TFIP-style .evento-music img, 
+.TFIP-style .evento-degustazione img {width: 40px; height: auto; float: left; margin-right: 15px;}
+.TFIP-style .evento-music p, 
+.TFIP-style .evento-degustazione p {margin-top: 8px;}
+.TFIP-style .scopri-home {text-transform: uppercase; font-family: Bebasregular; font-size: 15px; padding: 6px 15px 3px 15px; color: #e8d6c1}
+.TFIP-style .scopri-home a {color: #ffffff; text-decoration: none;}
+.TFIP-style .scopri-home a:hover {text-decoration: underline;}
+.TFIP-style .btn {text-transform: uppercase; font-family: Bebasregular;}
+.TFIP-style .btn-sport, 
+.TFIP-style .evento-sport button, 
+.TFIP-style .evento-sport .btn-outline:hover {background-color: #339900; color: #FFFFFF;}
+.TFIP-style .evento-sport button:hover, 
+.TFIP-style .btn-sport:hover {border-color: #339900; color: #339900; background-color: #FFFFFF;}
+.TFIP-style .evento-sport .btn-outline {border-color: #339900; color: #339900; background-color: #FFFFFF; margin-right: 10px;}
+.TFIP-style .btn-degustazione, 
+.TFIP-style .evento-degustazione button, 
+.TFIP-style .evento-degustazione .btn-outline:hover {background-color: #996666; color: #FFFFFF;}
+.TFIP-style .btn-degustazione:hover, 
+.TFIP-style .evento-degustazione button:hover {border-color: #996666; color: #996666; background-color: #FFFFFF;} 
+.TFIP-style .evento-degustazione .btn-outline {border-color: #996666; color: #996666; background-color: #FFFFFF; margin-right: 10px;}
+.TFIP-style .btn-music, 
+.TFIP-style .evento-music button, 
+.TFIP-style .evento-music .btn-outline:hover {background-color: #9933cc; color: #FFFFFF;}
+.TFIP-style .evento-music .btn-outline {border-color: #9933cc; color: #9933cc; background-color: #FFFFFF; margin-right: 10px;}
+.TFIP-style .btn-music:hover, 
+.TFIP-style .evento-music button:hover {border-color: #9933cc; color: #9933cc; background-color: #FFFFFF;}
+.TFIP-style .maxischermo {background-image: url('/wp-content/uploads/2024/03/maxischermo-partite-firenze.jpg'); background-size: cover; text-align: center; background-position: center; min-height: 280px; padding: 25px 0;}
+.TFIP-style .maxischermo h1 {text-transform: uppercase; font-family: Bebasregular; font-size: 2.2rem; padding-top: 15px; color: #FFFFFF; line-height: 1.2rem;}
+.TFIP-style .maxischermo h1 span, 
+.TFIP-style .maxischermo2 h2 span {color: #ff4416;}
+.TFIP-style .maxischermo h2 {text-transform: uppercase; font-family: Bebasregular; font-size: 2rem; color: #FFFFFF}
+.TFIP-style .loghi-tv {margin: 35px 0;}
+.TFIP-style .loghi-tv img {height: 40px; margin: 10px;}
+.TFIP-style .maxischermo2 {padding-top: 35px; text-align: center;}
+.TFIP-style .maxischermo2 h2 {text-transform: uppercase; font-family: Bebasregular; font-size: 0.9rem;}
+.TFIP-style .maxischermo2 p {margin: 25px 0;}
+.TFIP-style .maxischermo2 button {margin: 35px 0; background-color: #ff4416}
+.TFIP-style .maxischermo2 button:hover {border-color: #ff4416; background-color: #FFFFFF; color: #ff4416;}
+.TFIP-style .logo-mediaset {text-align: right;}
+.TFIP-style .logo-sky {text-align: center;}
+.TFIP-style .logo-dazn {text-align: left;}
+
+/*DETTAGLIO EVENTO*/
+.TFIP-style .dett-ev-cont {background-image: url('/wp-content/uploads/2024/03/sfondo-maxischermo-firenze.jpg'); background-size: cover; padding: 30px; margin-top: 56px;}
+.TFIP-style .music .dett-ev-cont {background-image: url('/wp-content/uploads/2024/03/sfondo-evento-music.jpg'); background-size: cover; padding: 30px;}
+.TFIP-style .food .dett-ev-cont {background-image: url('/wp-content/uploads/2024/03/sfondo-evento-food.jpg'); background-size: cover; padding: 30px;}
+.TFIP-style .music .dett-ev-cont {background-size: cover; padding: 30px;}
+.TFIP-style .dett-ev {background-color: #FFFFFF; padding: 15px;}
+.TFIP-style .dett-ev h1 {text-transform: uppercase; font-family: Bebasregular; font-size: 1.8rem; margin: 15px 0; text-align: center;}
+.TFIP-style .dett-ev hr {text-align: center; margin: 15px 0;}
+.TFIP-style .squadre {text-align: center;}
+.TFIP-style .squadre img {height: 50px; width: auto;}
+.TFIP-style .evento-sport-img {
+	width: 20px;
+	height: 20px;
+	margin-right: 3px;
+}
+.TFIP-style .music .squadre, 
+.TFIP-style .music .descrizione-sport, 
+.TFIP-style .sport .dett-music, 
+.TFIP-style .sport .dett-music p {display: none;}
+.TFIP-style .food .squadre, 
+.TFIP-style .food .descrizione-sport {display: none;}
+.TFIP-style .dett-ev h2 {font-size: 1.1rem; text-align: center;}
+.TFIP-style .dett-ev p {font-size: 0.8rem; text-align: center;}
+/* .TFIP-style .dett-ev button {margin-top: 15px;} */
+.TFIP-style .dett-ev h4 {font-size: 1rem; text-align: center; text-transform: uppercase; font-family: Bebasregular;}
+.TFIP-style .form-group {margin: 15px 0;}
+.TFIP-style .dett-ev .btn-outline-primary {color: #CCC; border-color: #CCC;}
+.TFIP-style .dett-ev .btn-outline-primary:hover {background-color: #CCC; color: #FFF;}
+.TFIP-style .dett-ev h3, 
+.TFIP-style .prenota-online h1 {text-transform: uppercase; font-family: Bebasregular; font-size: 1.5rem; padding-top: 15px; color: #ff4416; line-height: 2rem;}
+.TFIP-style .form-check-label {font-size: 0.7rem;}
+.TFIP-style .form-check {margin-top: 0.5rem;}
+.TFIP-style #nextBtn {text-align: center; width: 100%;}
+.TFIP-style .dett-music h1 {font-size: 1.5rem;}
+.TFIP-style .descrizione-sport {border-top: 1px solid #cccccc; padding: 15px 0; margin-top: 15px;}
+
+
+.TFIP-style .button-no-event-booking
+{
+  margin-top: 5px;
+}

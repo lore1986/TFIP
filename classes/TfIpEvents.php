@@ -1,13 +1,20 @@
 <?php
 
+include_once dirname( __FILE__ ) . '/TFIP_Database.php';
+
 class TfIpEvent
 {
-    function __construct()
+    private TFIP_Database $_ipfDatabase;
+
+    function __construct(TFIP_Database $database)
     {
+        $this->_ipfDatabase = $database;
+
         add_action( 'init', [$this ,'tfIpf_register_event_post_type'] );
-        add_action( 'save_post', [$this, 'save_tfIpf_meta_event_box_data'] );
+        add_action( 'save_post', [$this, 'save_tfIpf_meta_event_box_data'], 10, 3 );
     }
     
+
 
     function tfIpf_register_event_post_type() {
 
@@ -69,17 +76,55 @@ class TfIpEvent
         Date
         Time
         Type of event
-        Event specific fields
+        Event specific fieldssave_form_admin_booking()
     */
     
     function tfip_event__meta_box_callback( $post ) {
+        
         wp_nonce_field( 'tf_ipf_nonce_global', 'tfIpf_one_once' );
     
-        $timestamp = get_post_meta( $post->ID, '_tfIpf_event_date_time', true );
-        $timestamp = !empty($timestamp) ? (int) $timestamp : time();
+        $timestamp = get_post_meta( $post->ID, '_tfIpf_event_date', true );
+
+        $timeslots = null;
+        $refreshtimeslots = 1;
+
+        if(empty($timestamp))
+        {
+            //get default timeslots it is a new event
+            $timestamp = strtotime('today');
+            // $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timestamp);
+
+        }else
+        {
+            //get specific timeslot selected
+            $timestamp_verification = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($timestamp);
+
+            $refreshtimeslots = 0;
+            
+            if($timestamp_verification == null)
+            {
+                //here check for error
+                return;
+            }
+
+            $event_timeslot = get_post_meta( $post->ID, '_tfIpf_event_timeslot', true );
+            $timeslots =  $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timestamp);
+
+            foreach ($timeslots as $ts) {
+                # code...
+            }
+
+            //if($timeslots)
+            
+
+
+        }
+
+
     
-        $date_event = date('d/m/Y', $timestamp);
-        $time_event = date('H:i', $timestamp);
+        $date_event = date('d-m-Y', $timestamp);
+        
+        //$time_event = date('H:i', $timestamp);
     
         $event_type = esc_attr(get_post_meta($post->ID, '_tfIpf_event_type', true));
         $teamone = esc_attr(get_post_meta($post->ID, '_tfIpf_event_team_one', true));
@@ -88,7 +133,7 @@ class TfIpEvent
     
         <div class="form-group mb-3">
             <label for="event_date"><?php _e('Data Evento:', 'textdomain'); ?></label>
-            <input type="text" class="form-control" id="event_date" name="event_date" value="<?php echo esc_attr($date_event); ?>" autocomplete="off">
+            <input type="text" class="form-control" id="event_date" name="event_date" data-idtime="<?php echo esc_attr($time_event); ?>" value="<?php echo esc_attr($date_event); ?>" autocomplete="off">
         </div>
     
         <div class="form-group mb-3">
@@ -97,20 +142,19 @@ class TfIpEvent
             </div>
             <div class="row">
                 <select id="event_time" name="event_time" class="form-control">
-                    <?php
+                <?php 
+                    if($timeslots != null)
+                    {
+                        foreach ($timeslots as $slot): ?>
+                        <option 
+                            data-idtimeslot="<?php echo esc_attr($slot->id); ?>" 
+                            value="<?php echo esc_attr($slot->timeslotstart); ?>"
+                            <?php selected($slot->id, $event_timeslot); ?>>
+                            <?php echo esc_html($slot->timeslotstart . ' - ' . $slot->timeslotend); ?>
+                        </option>
+                        <?php endforeach; 
+                    }?>
 
-                    //EDIT FOR BETTER TIMING WITH SEPARATE FASCE D'ORARIO
-                    $options = [
-                        "15:00","15:15","15:30","15:45","16:00","16:15","16:30","16:45",
-                        "17:00","17:15","17:30","17:45","18:00","18:15","18:30","18:45",
-                        "19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45",
-                        "21:00","21:15","21:30","21:45","22:00","22:15","22:30","22:45",
-                        "23:00","23:15","23:30"
-                    ];
-                    foreach ($options as $option) {
-                        printf('<option value="%s" %s>%s</option>', esc_attr($option), selected($option, $time_event, false), esc_html($option));
-                    }
-                    ?>
                 </select>
             </div>
         </div>
@@ -142,34 +186,59 @@ class TfIpEvent
         <script>
             document.addEventListener('DOMContentLoaded', function () {
 
-                const typeSelect = document.getElementById('type_event');
-                const sportFields = document.getElementById('sport_fields');
+                Activate_Admin_Event_Options(<?php echo $refreshtimeslots ?>);
 
-                sportFields.style.display = typeSelect.value === 'sport' ? 'block' : 'none';
-
-                typeSelect.addEventListener('change', function () {
-                    sportFields.style.display = this.value === 'sport' ? 'block' : 'none';
-                });
-    
-                new Pikaday({
-                    field: document.getElementById('event_date'),
-                    format: 'DD/MM/YYYY',
-                    toString(date) {
-                        return moment(date).format('DD/MM/YYYY');
-                    },
-                    parse(dateString) {
-                        return moment(dateString, 'DD/MM/YYYY').toDate();
-                    },
-                    minDate: new Date(),
-                    showToday: true
-                });
             });
-        </script>
+
+            
+            </script>
+
         <?php
     }
     
+    function tfip_call_check_timeslots($datetimestamp, $timestring)
+    {
+        $day_id = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($datetimestamp);
 
-    function save_tfIpf_meta_event_box_data( $post_id ) {
+        if($day_id == null)
+        {
+            $day_id = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($datetimestamp);
+        }
+
+        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($datetimestamp);
+        
+        if(count($timeslots) == 0)
+        {
+            $timeslots = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($datetimestamp);
+        }
+
+
+        if(count($timeslots) == 1)
+        {
+            return $timeslots[0];
+        }else
+        {
+            foreach ($timeslots as $ts) {
+                $ts_start_date = DateTime::createFromFormat('H:i', $ts->timeslotstart);
+                $compare_time = DateTime::createFromFormat('H:i', $timestring);
+                if ($ts_start_date == $compare_time) {
+                    return $ts;
+                }
+            }
+        }
+        //get day
+        //if no exist create
+        //get timeslots
+        //if no exist create
+
+        //$timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($datetimestamp);
+        
+        
+    }
+
+    function save_tfIpf_meta_event_box_data($post_id, $post, $update) {
+
+        global $pagenow;
 
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
             return;
@@ -189,23 +258,34 @@ class TfIpEvent
             }
         }
         
-
-        $timestamp = strtotime(str_replace('/', '-', $_POST['event_date']));
-        $formattedDate = date('Y-m-d', $timestamp);
-
-        $date_event =  strtotime($formattedDate . " ". $_POST['event_time']);
-        $event_type = $_POST['type_event'];
-        $teamone = ucfirst(strtolower($_POST['teamone']));;
-        $teamtwo = ucfirst(strtolower($_POST['teamtwo']));
+        if($pagenow !== "post-new.php")
+        {
+            $timestamp_date = null;
         
-        
-        update_post_meta( $post_id, '_tfIpf_event_date_time', $date_event);
-        update_post_meta( $post_id, '_tfIpf_event_type', $event_type );
-        update_post_meta( $post_id, '_tfIpf_event_team_one', $teamone );
-        update_post_meta( $post_id, '_tfIpf_event_team_two', $teamtwo );
+            $timestamp_date = strtotime(str_replace('/', '-', $_POST['event_date']));
+            $timeslot_time = esc_attr($_POST['event_time']);
 
+
+            $timeslot_obj = $this->tfip_call_check_timeslots($timestamp_date, $timeslot_time);
+            $timeslot_id = $timeslot_obj->id;
+
+
+            $event_type = esc_attr($_POST['type_event']);
+            $teamone = ucfirst(strtolower($_POST['teamone']));
+            $teamtwo = ucfirst(strtolower($_POST['teamtwo']));
+            
+            
+            update_post_meta( $post_id, '_tfIpf_event_date', $timestamp_date);
+            update_post_meta( $post_id, '_tfIpf_event_type', $event_type );
+            update_post_meta( $post_id, '_tfIpf_event_team_one', $teamone );
+            update_post_meta( $post_id, '_tfIpf_event_team_two', $teamtwo );
+            update_post_meta( $post_id, '_tfIpf_event_time', $timeslot_obj->timeslotstart . " - " . $timeslot_obj->timeslotend);
+            update_post_meta( $post_id, '_tfIpf_event_timeslot', $timeslot_id);
+        
+        }
         
     }
+
 
    
 
