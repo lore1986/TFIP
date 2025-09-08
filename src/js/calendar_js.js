@@ -274,30 +274,41 @@ function EnableDisableDay(el)
 
 
 const list_containers = [
-    'admin-calendario',
+    'main-calendar',
     'booking-form-container_id',
     'container-timeslots-bookings',
     'container-timeslots-edit',
     'booking-form-caller',
     'booking-form-container_id',
-    // 'container-side',
     'container-events'
 ]
 
-function hide_show_layers(show_list) {
+// function hide_show_layers(show_list) {
 
+//     list_containers.forEach(layer => {
+//         const element = document.getElementById(layer);
+//         if (!element) return;
+
+//         if (show_list.includes(layer)) {
+//             element.style.display = 'block';
+//         } else {
+//             element.style.display = 'none';
+//         }
+//     });
+// }
+
+function hide_show_layers(show_list) {
     list_containers.forEach(layer => {
         const element = document.getElementById(layer);
         if (!element) return;
 
         if (show_list.includes(layer)) {
-            element.style.display = 'block';
+            element.hidden = false;  // show
         } else {
-            element.style.display = 'none';
+            element.hidden = true;   // hide
         }
     });
 }
-
 
 function CallBookingForm() {
     

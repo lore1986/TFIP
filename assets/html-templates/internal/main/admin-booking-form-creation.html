@@ -83,7 +83,7 @@
       <div class="col-12 mb-3 text-start">
             <% if (origin_i == 0 || origin_i == 2) { %>
               <button type="button" onclick="save_form_admin_booking()"  class="btn btn-success"> Aggiungi Prenotazione </button>
-              <button type="button" id="hide_form_booking_id" class="btn btn-primary" onclick="HideBookingForm()" data-list-containers='["admin-calendario", "booking-form-caller"]' data-container="<%= name_div %>">- Hide Booking Form</button>
+              <button type="button" id="hide_form_booking_id" class="btn btn-primary" onclick="HideBookingForm()" data-list-containers='["main-calendar", "booking-form-caller"]' data-container="<%= name_div %>">- Hide Booking Form</button>
             <% } else { %> 
               <button type="button" onclick="Update_form_admin_booking()"  class="btn btn-success">Update Prenotazione </button>
               <button type="button" id="hide_form_booking_id" class="btn btn-primary" onclick="HideBookingForm()" data-list-containers='["container-timeslots-bookings"]' data-container="<%= name_div %>">- Hide Booking Form</button>

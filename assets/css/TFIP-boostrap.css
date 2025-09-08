@@ -143,7 +143,7 @@ body {
 .TFIP-style .riga-modifica-prenotazione label {height: 30px;}
 .TFIP-style .riga-modifica-prenotazione .iti {width: 100%;}
 .TFIP-style .admin-modifica .form-control {width: 100% !important;}
-.TFIP-style .clickable-day {border-bottom: 1px solid #cccccc; border-right: 1px solid #cccccc; border-left: 1px solid #cccccc; position: relative; padding: 0; margin-bottom: 5px;}
+.TFIP-style .clickable-day {border-bottom: 2px solid #cccccc; border: 1px solid #cccccc; position: relative; padding: 0; margin-bottom: 5px;}
 .TFIP-style .clickable-day:hover {background-color: #f8f8f8;}
 .TFIP-style .row .clickable-day:first-child {border-left: 1px solid #cccccc;}
 .TFIP-style #calendar-container .container {border-top: 1px solid #cccccc;}
