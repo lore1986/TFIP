@@ -409,12 +409,6 @@ function load_form_admin_booking(location, origin = 0, idday = null, idtimeslot 
 
     document.getElementById(location).style.display = 'block';
 
-    const fpConf = {
-        enableTime: false,
-        noCalendar: false,
-        dateFormat: "d-m-Y"
-    };
-
     let day_si = null;
     let d_today = new Date;
     d_today.setHours(0, 0, 0); 
@@ -465,7 +459,14 @@ function load_form_admin_booking(location, origin = 0, idday = null, idtimeslot 
         });
         
         const dateInput = document.getElementById('admin_date_id');
-        dateInput.flatpickr(fpConf);
+
+        const fpConf = {
+            enableTime: false,
+            noCalendar: false,
+            dateFormat: "d-m-Y"
+        };
+
+        flatpickr(dateInput, fpConf);
 
         updateTimeslots(day_si, 'admin_time', idtimeslot, time_booking);
 
@@ -556,8 +557,6 @@ function addNewTimeslot() {
             dateFormat: "H:i",
             time_24hr: true,
             defaultHour: 17,
-            // minTime: "17:00",
-            // maxTime: "23:59",
             minuteIncrement: 1
         };
             
@@ -978,6 +977,9 @@ function handleClickEnd(el, start) {
   }
 
 function ajax_admin_call_calendar(direction = null, date = null) {
+
+    console.log(date);
+
     var currentDate = document.getElementById('date-val').innerText;
   
     if (date != null) {
@@ -999,6 +1001,10 @@ function ajax_admin_call_calendar(direction = null, date = null) {
           nonce: TFIP_Ajax_Obj.nonce
         },
         success: function(response) {
+
+            console.log(response)
+
+
           const newDate = response.newDate;
           const timestampNew = response.newTimestamp;
   
@@ -1009,7 +1015,13 @@ function ajax_admin_call_calendar(direction = null, date = null) {
           document.getElementById('calendar-container').innerHTML = rendered_underscore;
           document.getElementById('date-text-val').innerText = newDate;
           document.getElementById('date-val').innerText = timestampNew;
-  
+
+        //   const forwardButton = document.getElementById('next-month');
+        //   const backwardButton = document.getElementById('prev-month');
+
+        //   forwardButton.addEventListener('click', ()=>{ ajax_admin_call_calendar(1)})
+        //   backwardButton.addEventListener('click', ()=>{ ajax_admin_call_calendar(0)})
+
           document.querySelectorAll('.clickable-day').forEach(function(element) {
             let start;
   

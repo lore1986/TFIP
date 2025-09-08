@@ -2,74 +2,60 @@
 /* Template Name: Calendario Prenotazioni */
 ?>
 
-<div id="content" class="site-content" role="main">
-  <div id="primary" class="content-area">
-
-    <?php
+<?php
       wp_head();
       $daysArr = ["Lunedi", "Martedi", "Mercoledi", "Giovedi", "Venerdi", "Sabato", "Domenica"];
       get_header();
+?>
 
-      if (current_user_can('editor') || current_user_can('administrator')) {
-          echo '<header class="entry-header"><h1 class="ciao-admin">Prenotazioni</h1></header>';
-      } else {
-          echo '<h1>Ciao</h1>';
-      }
-    ?>
+
+<div id="content" class="site-content" role="main">
+  <div id="primary" class="content-area">
 
     <div class="TFIP-style">
-      <!-- <div class="container">
-        <div class="row admin-prenotazione" id="container-side" style="display: none;">
-          <div class="col-12">
-            <div id="form-booking-admin"></div>
+      <div class="container-fluid">
+
+        <div class="row align-items-center mb-3">
+          <!-- Left: Calendar Controls -->
+          <div class="col-lg-4 col-8 d-flex justify-content-between align-items-center">
+            <button class="btn btn-primary" onclick="ajax_admin_call_calendar(0)" id="prev-month">&lt;</button>
+            <h4 id="date-text-val" class="mb-0 text-center flex-grow-1"></h4>
+            <button class="btn btn-primary" onclick="ajax_admin_call_calendar(1)" id="next-month">&gt;</button>
+            <p id="date-val" class="d-none"><?php echo strtotime(date('d-m-Y')) ?></p>
+          </div>
+
+          <!-- Right: Add Booking Button -->
+          <div class="col-lg-8 col-4 text-end">
+            <button type="button" class="btn btn-success" id="booking-form-caller" onclick="CallBookingForm(1)">
+              + Add Booking
+            </button>
           </div>
         </div>
-      </div> -->
 
-      <div class="container-fluid">
+        <!-- Calendar Container -->
+        <div class="row" id="calendar-container">
+          <!-- The calendar will render inside here -->
+        </div>
+
         <div class="row">
-            <div class="col-12 admin-calendario" id="admin-calendario">
-              <div class="row text-center mt-3">
-                <div class="col-10">
-                  <div class="row">
-                    <div class="col-2">
-                      <button class="btn btn-primary" onclick="ajax_admin_call_calendar(0)" id="prev-month">&lt;</button>
-                    </div>
-                    <div class="col-8 center">
-                      <h4 id="date-text-val"></h4>
-                      <p id="date-val" style="display:none;"><?php echo strtotime(date('d-m-Y')) ?></p>
-                    </div>
-                    <div class="col-2 center">
-                      <button class="btn btn-primary" onclick="ajax_admin_call_calendar(1)" id="next-month">&gt;</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-2 text-center">
-                  <button type="button" class="btn btn-success" id="booking-form-caller" onclick="CallBookingForm(1)">+ Add Booking</button>
-                </div>
-              </div>
-
-              <div class="row" id="calendar-container">
-                <!-- The calendar will render inside here -->
-              </div>
-            </div>
-            <div class="col-12 booking-form-container" id="booking-form-container_id"></div>
-            <div class="col-12" id="container-timeslots-bookings" style="display: none;"></div>
-            <div class="col-12" id="container-timeslots-edit" style="display: none;"></div>
-            <!-- <div class="col-6" id="container-side" style="display: none;"></div> -->
-            <div class="col-12" id="container-events" style="display: none;"></div>
+          <div class="col-12 booking-form-container" id="booking-form-container_id"></div>
+          <div class="col-12" id="container-timeslots-bookings" style="display: none;"></div>
+          <div class="col-12" id="container-timeslots-edit" style="display: none;"></div>
+          <div class="col-12" id="container-events" style="display: none;"></div>
         </div> <!-- /.row -->
+
       </div> <!-- /.container-fluid -->
     </div> <!-- /.TFIP-style -->
+
   </div> <!-- /#primary -->
 </div> <!-- /#content -->
+
+
 
 <script>
   window.onload = function() {
     ajax_admin_call_calendar(-1);
   };
-
- 
 
   function Hide_Calendar_Bookings() {
     document.getElementById("calendar-container").style.display = "none";

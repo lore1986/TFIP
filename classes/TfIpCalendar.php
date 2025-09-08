@@ -573,8 +573,10 @@ class TfIpCalendar {
         $startingDate = date('Y-m-01');
 
         if (isset($_POST["datestart"])) {
-            $raw = sanitize_text_field(esc_attr($_POST["datestart"])); 
-            $dateObj = DateTime::createFromFormat('d-m-Y', $raw);
+
+            $raw = intval($_POST["datestart"]);
+            $dateObj = (new DateTime())->setTimestamp($raw);
+            $dateObj->modify('first day of this month');
 
             if ($dateObj !== false) {
                 $startingDate = $dateObj->format('Y-m-01'); 

@@ -741,6 +741,7 @@ body {
   margin-right: calc(-0.5 * var(--bs-gutter-x));
   margin-left: calc(-0.5 * var(--bs-gutter-x));
 }
+
 .TFIP-style .row > * {
   flex-shrink: 0;
   width: 100%;
@@ -11422,4 +11423,24 @@ body {
 .TFIP-style .button-no-event-booking
 {
   margin-top: 5px;
+}
+
+/* CALENDARIO */
+.TFIP-style .badge-pill-bookings
+{
+  background-color: #0a53be;
+}
+.TFIP-style .badge-pill-guests
+{
+  background-color: #b02a37;
+}
+.TFIP-style .badge-pill-available
+{
+  background-color: #007c3c;
+}
+
+@media (max-width: 1210px) {
+  .clickable-day {
+    flex: 0 0 100% !important;
+  }
 }

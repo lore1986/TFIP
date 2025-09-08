@@ -1,34 +1,37 @@
-<div class="container">
-  <% _.each(weeks, function(week) { %>
-    <div class="row">
-      <% _.each(week, function(day) { %>
-        <div class="col-sm-12 col-md clickable-day" data-date="<%= day.timestamp %>" style="background-color: <%= day.backgroundcolorclass %>;">
-          <div class="casella-giorno-sett"><%= day.weekday %></div>
-          <div class="row casella-giorno">
-            <div class="casella-giorno-num col-6 col-md-12"><%= day.day %></div>
-            <div class="col-6 col-md-12">
-              <div id="reset_<%= day.timestamp %>" class="casella-prenotazioni">
-                <span class="badge badge-pill" style="background-color: black;"><%= day.bookings %> prenotazioni</span>
-                <span class="badge badge-pill" style="background-color: black;"><%= day.customers_in %> persone </span>
-                <span class="badge badge-pill" style="background-color: black;"><%= day.availability %> disponibili</span>
-              </div>
-              <!-- Timeslot loop -->
-              <% if (day.timeslots && day.timeslots.length > 0) { %>
-                <div class="timeslot-list mt-2">
-                  <% _.each(day.timeslots, function(ts) { %>
-                    <div class="timeslot-entry border p-1 mb-1">
-                      <%= ts.start %> - <%= ts.end %>: <%= ts.timeslot_active_bookings %> / <%= ts.timeslot_availability %><br>
-                    </div>
-                  <% }); %>
-                </div>
-              <% } else { %>
-                <div class="text-muted">No timeslots</div>
-              <% } %>
-
+<% _.each(weeks, function(week) { %>
+  <div class="d-flex flex-wrap g-0">
+    <% _.each(week, function(day) { %>
+      <div class="clickable-day mb-2 p-1"
+           data-date="<%= day.timestamp %>"
+           style="background-color: <%= day.backgroundcolorclass %>; flex: 0 0 calc(100% / 7);">
+        
+        <div class="casella-giorno-sett text-center"><%= day.weekday %></div>
+        
+        <div class="row casella-giorno">
+          <div class="casella-giorno-num col-6 col-md-12"><%= day.day %></div>
+          <div class="col-6 col-md-12">
+            <div id="reset_<%= day.timestamp %>" class="casella-prenotazioni">
+              <span class="badge badge-pill badge-pill-bookings"><%= day.bookings %> prenotazioni</span>
+              <span class="badge badge-pill badge-pill-guests"><%= day.customers_in %> persone</span>
+              <span class="badge badge-pill badge-pill-available"><%= day.availability %> disponibili</span>
             </div>
+
+            <% if (day.timeslots && day.timeslots.length > 0) { %>
+              <div class="timeslot-list mt-2">
+                <% _.each(day.timeslots, function(ts) { %>
+                  <div class="d-flex justify-content-between align-items-center mb-1 p-1">
+                    <span><%= ts.start %> - <%= ts.end %></span>
+                    <span><strong><%= ts.timeslot_active_bookings %> / <%= ts.timeslot_availability %></strong></span>
+                  </div>
+                <% }); %>
+              </div>
+            <% } else { %>
+              <div class="text-muted">No timeslots</div>
+            <% } %>
           </div>
         </div>
-      <% }); %>
-    </div>
-  <% }); %>
-</div>
+
+      </div>
+    <% }); %>
+  </div>
+<% }); %>

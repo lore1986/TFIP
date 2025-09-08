@@ -176,13 +176,26 @@ function ConfirmCodeBooking()
         },
         success: function(response) {
 
-            console.log(response);
+            if(response.resolution == 1)
+            {
+                const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/partial/booking_success.html';
 
+                jQuery.get(templateUrl, function (templateHtml) {
+                    const templateCompiled = _.template(templateHtml);
+                    const renderedTemplate = templateCompiled();
+                    document.getElementById('confirm_booking_form').innerHTML = renderedTemplate;
+                });
+
+            }else
+            {
+                //fix add better handling should not happen
+                document.getElementById('confirm_booking_form').innerHTML = response.message;
+            }
+            
             
         },
         error: function(xhr, status, error) {
-            console.error(error);
-            alert("Errore durante l'invio del form. Riprova più tardi.");
+            document.getElementById('confirm_booking_form').innerHTML = "Errore durante l'invio del form. Riprova più tardi."
         }
     });
 
