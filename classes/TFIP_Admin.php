@@ -82,6 +82,7 @@ class TFIP_Admin {
 
     public function tfipf_register_settings() {
         register_setting( 'tfipf_settings_group', 'tfip_whatsapp_token' );
+
         register_setting( 'tfipf_settings_group', 'tfip_default_capienza', [$this, 'tfipf_sanitize_capienza_value'] );
         
         register_setting('tfipf_settings_group', 'tfip_timeslots', [
@@ -196,38 +197,7 @@ class TFIP_Admin {
     
 
     function tfipf_sanitize_capienza_value( $input ) {
-        
-        global $wpdb;
-
         $sanitized_capienza = intval( $input );
-        $current_timestamp = strtotime('today');
-
-        $six_months_timestamp = strtotime('+6 months', $current_timestamp);
-
-        $existing_records = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}ipf_days_date WHERE id >= %d", $current_timestamp));
-
-        if ($existing_records) {
-
-            foreach ($existing_records as $record) {
-                $wpdb->update(
-                    "{$wpdb->prefix}ipf_days_date",
-                    array('max_participants' => $sanitized_capienza),
-                    array('id' => $record->id),
-                    array('%d'),
-                    array('%d')
-                );
-            }
-        } else {
-
-            for ($timestamp = $current_timestamp; $timestamp <= $six_months_timestamp; $timestamp += 86400) { // Increment by 1 day (86400 seconds)
-                $wpdb->insert(
-                    "{$wpdb->prefix}ipf_days_date",
-                    array('id' => $timestamp, 'bookings' => 0, 'max_participants' => $sanitized_capienza),
-                    array('%d', '%d', '%d')
-                );
-            }
-        }
-        
         return $sanitized_capienza;
     }
 }

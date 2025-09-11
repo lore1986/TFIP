@@ -17,6 +17,7 @@ include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TfIpManager.php');
 include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Admin.php');
 include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Pages.php');
 include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Templater.php');
+include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Utils.php');
 
 // Shortcode and script actions
 add_action('wp_enqueue_scripts', 'TFIP_user_enqueue_scripts');
@@ -188,15 +189,18 @@ function TFIP_Pub_No_Event_Booking_Shortcode_Action()
     global $database;
     ob_start();
     $obj_d = new stdClass();
-    
-    $obj_d->date_str = date('d-m-Y');
+
+    $obj_d->date_str =  date('d-m-Y');
     $obj_d->date_stamp = strtotime($obj_d->date_str);
 
     $obj_d->timeslots = $database->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($obj_d->date_stamp);
-
+    
     if(count($obj_d->timeslots) == 0)
     {
-        $obj_d->timeslots = get_option('tfip_timeslots', []);
+        $obj_d->timeslots = TFIP_Utils::TFIP_Utils_Format_No_Create_Default_Timeslots($obj_d->date_stamp);
+    }else
+    {
+        $obj_d->timeslots = TFIP_Utils::TFIP_Utiles_Format_Existing_Timeslots($obj_d->timeslots, $obj_d->date_stamp);
     }
 
     extract([ 'objdata' => $obj_d ]);

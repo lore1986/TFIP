@@ -1,4 +1,4 @@
-<form id="add-booking-admin-form TFIP-style">
+<form id="add-booking-admin-form" class="TFIP-style">
   <div class="row riga-modifica-prenotazione">
     <div class="col-12" id="message-admin"></div>
 
@@ -6,24 +6,23 @@
       <div class="row">
         
         <% if (origin_i == 1 && booking_i) { %>
-          <!-- Case 0: New Booking no Timeslots -->
+          <!-- Retrieve admin form for an existing booking  -->
           <input type="number" id="original_timeslot" name="original_timeslot" value="<%- idtimeslot_i %>" />
           <input type="number" id="id_booking" name="id_booking" value="<%- booking_i.idbooking %>" />
         
         <% } else if (origin_i == 2) { %>
-          <!-- Case 2: Timeslot only is provided -->
+          <!-- Add booking to a timeslot -->
           <input type="number" id="original_timeslot" name="original_timeslot" value="<%- idtimeslot_i %>" />
         
         <% } else { %>
-          <!-- Case 0 or any other -->
-          <!-- No hidden inputs needed, or provide defaults -->
+           <!-- New booking form  -->
         <% } %>
         
 
 
         <div class="col-12 col-md-6 admin-modifica">
           <label for="admin_date_id">Data prenotazione:</label>
-          <input type="text" class="form-control" id="admin_date_id" name="date_id" value="<%- day_str %>" required>
+          <input type="text" class="form-control" id="admin_date_id" name="admin_date_id" value="<%- day_str %>" required>
         </div>
         <div class="col-12 col-md-6 admin-modifica">
           <label for="time_booking">Orario:</label>

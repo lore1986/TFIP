@@ -22,81 +22,44 @@ class TFIP_Database {
         $overlap_verification = 0;
 
         foreach ($timeslots_in as $timeslot) {
+            
             if (isset($timeslot['id_date'], $timeslot['start'], $timeslot['end'], $timeslot['capacity'], $timeslot['active_bookings'], $timeslot['active'])) {
-        
-                // Check for overlapping timeslot
-                $overlap = $wpdb->get_row(
-                    $wpdb->prepare(
-                        "SELECT * FROM $table_name 
-                         WHERE id_date = %d 
-                           AND timeslotstart < %s 
-                           AND timeslotend > %s",
-                        $timeslot['id_date'],
-                        $timeslot['end'],      
-                        $timeslot['start']   
-                    ),
-                    ARRAY_A
-                );
-        
-                if ($overlap) {
+              
+                $data = [
+                    'id_date' => $timeslot['id_date'],
+                    'timeslotstart' => $timeslot['start'],
+                    'timeslotend' => $timeslot['end'],
+                    'max_bookings' => $timeslot['capacity'],
+                    'active_bookings' => $timeslot['active_bookings'],
+                    'active' => $timeslot['active']
+                ];
+    
+                $format = ['%d', '%s', '%s', '%d', '%d', '%d'];
+                $wpdb->insert($table_name, $data, $format);
+                wp_reset_query();
 
-                    $overlap_verification += 1;         
 
-                }else
-                {
-                    $existing = $wpdb->get_row(
-                        $wpdb->prepare(
-                            "SELECT * FROM $table_name 
-                            WHERE id_date = %d 
-                            AND timeslotstart = %s 
-                            AND timeslotend = %s",
-                            $timeslot['id_date'],
-                            $timeslot['start'],
-                            $timeslot['end']
-                        ),
-                        ARRAY_A
-                    );
-                    
-                    wp_reset_query();
-            
-                    if (!$existing) {
-                        $data = [
-                            'id_date' => $timeslot['id_date'],
-                            'timeslotstart' => $timeslot['start'],
-                            'timeslotend' => $timeslot['end'],
-                            'max_bookings' => $timeslot['capacity'],
-                            'active_bookings' => $timeslot['active_bookings'],
-                            'active' => $timeslot['active']
-                        ];
-            
-                        $format = ['%d', '%s', '%s', '%d', '%d', '%d'];
-                        $wpdb->insert($table_name, $data, $format);
-                        wp_reset_query();
+                ///changing
+                if ($wpdb->insert_id) {
 
-                        if ($wpdb->insert_id) {
+                    $data['id'] = $wpdb->insert_id;
 
-                            $created_timeslots[] = [
-                                'ts' => [
-                                    'id_slot' => $wpdb->insert_id,
-                                    'data_slot' => $data
-                                ]
-                            ];
+                    $created_timeslots[] = [
+                        'ts' => (object)$data
+                    ];
 
-                        } else {
-                            return [
-                                'resolution' => 0,
-                                'id_slot' => null,
-                                'message' => "Error inserting timeslot with ID: " . $timeslot['id_date']
-                            ];
-                        }
-                    }
+                } else {
+                    return [
+                        'resolution' => 0,
+                        'slot_data' => null,
+                        'message' => "Error inserting timeslot with ID: " . $timeslot['id_date']
+                    ];
                 }
-        
-                
+
             } else {
                 return [
                     'resolution' => 0,
-                    'id_slot' => null,
+                    'slot_data' => null,
                     'message' => "Missing required data for timeslot with ID: " . $timeslot['id_date']
                 ];
             }
@@ -106,7 +69,7 @@ class TFIP_Database {
         {  
             return [
                 'resolution' => 0, 
-                'id_slot' => null,
+                'slot_data' => null,
                 'message' => "Overlapping timeslot found for all timeslots given" 
             ];
 
@@ -118,7 +81,7 @@ class TFIP_Database {
             {
                 return [
                     'resolution' => 1,
-                    'id_slot' => $created_timeslots,
+                    'slot_data' => $created_timeslots,
                     'message' => "Timeslots inserted in DB"
                 ];
                 
@@ -126,12 +89,49 @@ class TFIP_Database {
             {
                 return [
                     'resolution' => 0,
-                    'id_slot' => null,
+                    'slot_data' => null,
                     'message' => "Problems in updating max day availability as sum of all slots availability"
                 ];
             }
         }
         
+
+    }
+
+    
+    public function TFIP_Database_Get_Create_Format_Timeslots($day_timestamp)
+    {
+        $timeslots = $this->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($day_timestamp);
+        
+        if(count($timeslots) == 0)
+        {
+            $res_slots = $this->TFIP_Booking_Create_And_Return_Default_Timeslots($day_timestamp);
+
+            if(count($res_slots) > 0)
+            {
+
+                return [
+                    'timeslots' => $res_slots,
+                    'resolution' => 1,
+                    'message' => "Timeslots Created"
+                ];
+            
+            }else
+            {
+                return [
+                    'timeslots' => null,
+                    'resolution' => 0,
+                    'message' => "Error creating default timeslots"
+                ];
+            }
+        }else
+        {
+            return [
+                'timeslots' => $timeslots,
+                'resolution' => 1,
+                'message' => "Timeslots Founded"
+            ];
+        }
 
     }
 
@@ -200,8 +200,8 @@ class TFIP_Database {
         
         if(count($timeslots) > 0)
         {
-            $newmax = array_sum(array_column($timeslots, 'max_bookings'));
-            
+            $unwrapped = array_column($timeslots, 'ts');
+            $newmax = array_sum(array_column($unwrapped, 'max_bookings'));
 
             $result = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $id_date));
             wp_reset_query();
@@ -349,9 +349,14 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
         $timeslots = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $id_date));
+
+        $normalized_timeslots = array_map(function($slot) {
+            return ['ts' => $slot];
+        }, $timeslots);
+
         wp_reset_query();
 
-        return $timeslots;
+        return $normalized_timeslots;
     }
 
     public function TFIP_Database_Get_Specific_Timeslot($id_slot) {
@@ -598,7 +603,7 @@ class TFIP_Database {
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
-        $timeslot_instance = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id_slot), ARRAY_A);
+        $timeslot_instance = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id_slot));
         wp_reset_query();
 
 
@@ -608,13 +613,13 @@ class TFIP_Database {
         {
             $new_active_bookings = 0;
             
-            $new_active_bookings = (int)$timeslot_instance['active_bookings'] + (int)$participants;
+            $new_active_bookings = (int)$timeslot_instance->active_bookings + (int)$participants;
             
-            if($new_active_bookings <= $timeslot_instance['max_bookings'])
+            if($new_active_bookings <= $timeslot_instance->max_bookings)
             {
                 $table_name = $wpdb->prefix . 'tfip_active_days';
 
-                $same_slot_bookings = $timeslot_instance['active_bookings'] + (int) $participants;
+                $same_slot_bookings = $timeslot_instance->active_bookings + (int) $participants;
 
                 if($same_slot_bookings < 0)
                 {
@@ -627,7 +632,7 @@ class TFIP_Database {
                 }else
                 {
                 
-                    if($timeslot_instance['max_bookings'] >= $same_slot_bookings )
+                    if((int)$timeslot_instance->max_bookings >= $same_slot_bookings )
                     {
                         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
 
@@ -655,7 +660,7 @@ class TFIP_Database {
                             return [
                                 'resolution' => 1,
                                 'message' => 'OK',
-                                'updated_availability' => $timeslot_instance['max_bookings'] - $same_slot_bookings
+                                'updated_availability' => $timeslot_instance->max_bookings - $same_slot_bookings
                             ];
 
                         }
@@ -993,8 +998,9 @@ class TFIP_Database {
             if (count($timeslots) != 0) {
 
                
-                foreach ($timeslots as $ts) {
-
+                foreach ($timeslots as $single_timeslot) {
+                    
+                    $ts = $single_timeslot['ts'];
 
                     $bookings = $wpdb->get_results(
                         $wpdb->prepare(
@@ -1194,45 +1200,8 @@ class TFIP_Database {
         }
 
         $res_timeslots = $this->TFIP_Database_Create_TimeSlots($timeslots);
-        $ret = null;
 
-        switch ($res_timeslots['resolution']) {
-            case 0:
-                {
-                    $ret = [
-                        'resolution' => 0,
-                        'timeslots' => null,
-                        'message' => 'NOPE'
-                    ];
-                }
-                break;
-            case 1:
-            {
-                $timeslots_objects = (array) $res_timeslots['id_slot'];
-        
-                $ret = [
-                    'resolution' => 1,
-                    'timeslots' => $timeslots_objects,
-                    'message' => 'OK'
-                ];
-            }
-            break;
-            case 2:
-            {
-                //some timeslot are overlapping. timeslots is not being created
-                //apply procedure to save bookings and reset timeslots for the day.
-
-                $ret = [
-                    'resolution' => 0,
-                    'timeslots' => null,
-                    'message' => 'NOPE'
-                ];
-
-            }
-        }
-        
-
-        return $ret;
+        return $res_timeslots['slot_data'];
 
     }
 

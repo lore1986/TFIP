@@ -15,9 +15,10 @@
                     <select id="client_time" name="client_time" class="form-control form-select">
                     <option value="0">Seleziona orario</option>
                     <?php if (!empty($objdata->timeslots)) { ?>
-                        <?php foreach ($objdata->timeslots as $slot) { ?>
-                            <option value="<?php echo esc_html($slot->timeslotstart); ?>">
-                                <?php echo esc_html($slot->timeslotstart . ' - ' . $slot->timeslotend); ?>
+                        <?php foreach ($objdata->timeslots as $slotWrapper) { ?>
+                            <?php $slot = $slotWrapper['ts'];  ?>
+                            <option value="<?php echo esc_html($slot['timeslotstart']); ?>">
+                                <?php echo esc_html($slot['timeslotTimeStr']); ?>
                             </option>
                         <?php } ?>
                     <?php } ?>

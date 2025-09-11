@@ -12,6 +12,8 @@ class TfIpEvent
 
         add_action( 'init', [$this ,'tfIpf_register_event_post_type'] );
         add_action( 'save_post', [$this, 'save_tfIpf_meta_event_box_data'], 10, 3 );
+        add_action( 'delete_post', [$this, 'delete_tfIpf_event_and_data']);
+        add_action( 'wp_trash_post', [$this, 'trash_tfIpf_event_and_data'] );
     }
     
 
@@ -124,11 +126,14 @@ class TfIpEvent
     
         $date_event = date('d-m-Y', $timestamp);
         
+        
         //$time_event = date('H:i', $timestamp);
     
         $event_type = esc_attr(get_post_meta($post->ID, '_tfIpf_event_type', true));
         $teamone = esc_attr(get_post_meta($post->ID, '_tfIpf_event_team_one', true));
         $teamtwo = esc_attr(get_post_meta($post->ID, '_tfIpf_event_team_two', true));
+        $exact_time_event = esc_attr(get_post_meta($post->ID, '_tfip_exact_time_event', true));
+
         ?>
     
         <div class="form-group mb-3">
@@ -145,7 +150,9 @@ class TfIpEvent
                 <?php 
                     if($timeslots != null)
                     {
-                        foreach ($timeslots as $slot): ?>
+                        foreach ($timeslots as $slot_item): 
+                            $slot = $slot_item['ts'];
+                        ?>
                         <option 
                             data-idtimeslot="<?php echo esc_attr($slot->id); ?>" 
                             value="<?php echo esc_attr($slot->timeslotstart); ?>"
@@ -156,6 +163,10 @@ class TfIpEvent
                     }?>
 
                 </select>
+            </div>
+            <div class="row">
+                <label for="exact_time_event"><?php _e('Orario Esatto:', 'textdomain'); ?></label>
+                <input type="text" class="form-control" id="exact_time_event" name="exact_time_event" value="<?php echo esc_attr($exact_time_event); ?>" >
             </div>
         </div>
     
@@ -213,27 +224,48 @@ class TfIpEvent
         }
 
 
-        if(count($timeslots) == 1)
-        {
-            return $timeslots[0];
-        }else
-        {
+        if (count($timeslots) == 1) {
+
+            return $timeslots[0]['ts']; 
+
+        } else {
+            
             foreach ($timeslots as $ts) {
-                $ts_start_date = DateTime::createFromFormat('H:i', $ts->timeslotstart);
-                $compare_time = DateTime::createFromFormat('H:i', $timestring);
-                if ($ts_start_date == $compare_time) {
-                    return $ts;
+                $ts_item = $ts['ts']; 
+        
+                $ts_start_date = DateTime::createFromFormat('H:i', $ts_item->timeslotstart);
+                $compare_time  = DateTime::createFromFormat('H:i', $timestring);
+        
+                if ($ts_start_date->format('H:i') === $compare_time->format('H:i')) {
+                    return $ts_item;
                 }
             }
-        }
-        //get day
-        //if no exist create
-        //get timeslots
-        //if no exist create
+        }    
+        
+    }
 
-        //$timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($datetimestamp);
-        
-        
+
+    function delete_tfIpf_event_and_data( $post_id ) {
+
+        $post = get_post( $post_id );
+    
+       
+        if ( $post && $post->post_type === 'tfipfevent' ) {
+
+            delete_post_meta( $post_id, '_tfIpf_event_date');
+            delete_post_meta( $post_id, '_tfIpf_event_type');
+            delete_post_meta( $post_id, '_tfIpf_event_team_one');
+            delete_post_meta( $post_id, '_tfIpf_event_team_two');
+            delete_post_meta( $post_id, '_tfIpf_event_time');
+            delete_post_meta( $post_id, '_tfIpf_event_timeslot');
+            delete_post_meta( $post_id, '_tfip_exact_time_event');
+
+        }
+    }
+
+    function trash_tfIpf_event_and_data($post_id)
+    {
+        $post = get_post( $post_id );
     }
 
     function save_tfIpf_meta_event_box_data($post_id, $post, $update) {
@@ -273,6 +305,8 @@ class TfIpEvent
             $event_type = esc_attr($_POST['type_event']);
             $teamone = ucfirst(strtolower($_POST['teamone']));
             $teamtwo = ucfirst(strtolower($_POST['teamtwo']));
+
+            $exact_event_time = esc_attr( $_POST['exact_time_event']);
             
             
             update_post_meta( $post_id, '_tfIpf_event_date', $timestamp_date);
@@ -281,6 +315,7 @@ class TfIpEvent
             update_post_meta( $post_id, '_tfIpf_event_team_two', $teamtwo );
             update_post_meta( $post_id, '_tfIpf_event_time', $timeslot_obj->timeslotstart . " - " . $timeslot_obj->timeslotend);
             update_post_meta( $post_id, '_tfIpf_event_timeslot', $timeslot_id);
+            update_post_meta( $post_id, '_tfip_exact_time_event', $exact_event_time);
         
         }
         

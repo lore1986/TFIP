@@ -39,10 +39,11 @@
         
 
         <div class="row">
-          <div class="col-12 booking-form-container" id="booking-form-container_id"></div>
-          <div class="col-12" id="container-timeslots-bookings" hidden></div>
-          <div class="col-12" id="container-timeslots-edit" hidden></div>
-          <div class="col-12" id="container-events" hidden></div>
+          <div class="col-12 booking-form-container" id="booking-form-container_id"><!-- Admin Booking Form will render inside here --></div>
+          <div class="col-12" id="container-timeslots-bookings" hidden><!-- Bookings for single day will render inside here --></div>
+          <div class="col-12" id="container-events" hidden><!-- Events for single day will render inside here --></div>
+          <div class="col-12" id="container-timeslots-edit" hidden><!-- Admin Edit Delete Create Timeslots will render inside here --></div>
+          
         </div> <!-- /.row -->
 
       </div> <!-- /.container-fluid -->

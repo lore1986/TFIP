@@ -1,6 +1,7 @@
 <?php
 
-include_once plugin_dir_path( __FILE__ ) . 'TFIP_Database.php';
+include_once (plugin_dir_path( __FILE__ ) . 'TFIP_Database.php');
+
 // include_once plugin_dir_path( __FILE__ ) . 'TfIpfManager.php';
 
 
@@ -242,7 +243,7 @@ class TfIpCalendar {
         {
             $obj ['resolution'] = 0;
             $obj ['message'] = "Start time must be earlier than end time.";
-
+            $obj ['iddate'] = null;
         
         }else
         {
@@ -260,7 +261,7 @@ class TfIpCalendar {
                 'end' => $end,
                 'capacity' => $max_bookings,
                 'active_bookings' => 0,
-                'active' =>  1 //change here
+                'active' =>  1 
             ];
 
             $newtimeslots[] = $single_slot;
@@ -268,6 +269,7 @@ class TfIpCalendar {
 
             $obj ['resolution'] = $validation ['resolution'];
             $obj ['message'] = $validation ['message'];
+            $obj ['iddate'] = $id_day;
 
         }
 
@@ -380,7 +382,7 @@ class TfIpCalendar {
     */
     public function TFIP_Calendar_Get_Timeslots_Date()
     {
-        global $wpdb;
+        
         setlocale(LC_TIME, 'it_IT.utf8');
 
         //$today = date('Y-m-01');
@@ -408,102 +410,23 @@ class TfIpCalendar {
             $slot_time = sanitize_text_field( $_POST["time_s"]);
         }
 
-        if(isset($_POST["timedslot"]) && $_POST["timedslot"] !== "")
-        {
-            $timedslot = intval( $_POST["timedslot"]);
-        }
+        // if(isset($_POST["timedslot"]) && $_POST["timedslot"] !== "")
+        // {
+        //     $timedslot = intval( $_POST["timedslot"]);
+        // }
         
-        
-        $table_name = $wpdb->prefix . 'tfip_active_days';
-        $active_day = $wpdb->get_row(
-            $wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $timestamp)
-        );
 
-        $timeslots  = [];
-
-        if($active_day)
-        {
-            $allts = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timestamp); //$wpdb->get_results($wpdb->prepare("SELECT * FROM  $table_is WHERE id_date = %d", $timestamp));
-            
-            for($i = 0; $i < count($allts); $i++)
-            {
-                $ts_object = array(
-                    'ids' => $allts[$i]->id,
-                    'start' => $allts[$i]->timeslotstart,
-                    'end' => $allts[$i]->timeslotend,
-                    'sel' => 0
-                );
-
-                $timeslots[$i] = $ts_object;
-            }
-
-        }
-
-        $slots = [];
+        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timestamp); 
 
         if(count($timeslots) == 0)
         {
-            $timeslots = get_option('tfip_timeslots', []);
-        }
-
-        if(count($timeslots) == 1)
-        {
-            $start = new DateTime($timeslots[0]['start']);
-            $end = new DateTime($timeslots[0]['end']);
-
-            if($timedslot == 0)
-            {
-                $interval = new DateInterval('PT15M'); 
-                $period = new DatePeriod($start, $interval, $end); 
-                
-                foreach ($period as $time) {
-                    
-                    $slot_ = [
-                        'ids' => $timeslots[0]['ids'],
-                        'objt' => $time->format('H:i'),
-                        'valt' => $time->format('H:i'),
-                        'sel' => $slot_time != null && $slot_time == $time->format('H:i') ? 1 : 0
-                    ];
-                    
-                    $slots[] = $slot_; 
-                }
-            }else
-            {
-                $slot_ = [
-                    'ids' => $timeslots[0]['ids'],
-                    'objt' =>  $start->format('H:i') . " - " . $end->format('H:i'),
-                    'valt' => $start->format('H:i'), 
-                    'sel' => 1
-                ];
-
-                $slots[] = $slot_; 
-            }
-            
-
-            //$slots[] = ['objt' => $end->format('H:i'), 'valt' => $end->format('H:i')];
-            
+            $timeslots = TFIP_Utils::TFIP_Utils_Format_No_Create_Default_Timeslots($timestamp);
         }else
         {
-
-
-            foreach($timeslots as $ts)
-            {
-                $start = new DateTime($ts['start']);
-                $end = new DateTime($ts['end']);
-
-
-                $slot_ = [
-                    'ids' => $ts['ids'],
-                    'objt' => $start->format('H:i') . " - " . $end->format('H:i'),
-                    'valt' => $start->format('H:i'),
-                    'sel' => $ts['ids'] != null && $ts['ids'] == $slotid ? 1 : 0
-                ];
-
-                $slots[] = $slot_; 
-            }
+            $timeslots = TFIP_Utils::TFIP_Utiles_Format_Existing_Timeslots($timeslots, $timestamp, $slotid, $slot_time);
         }
 
-        wp_send_json($slots);
+        wp_send_json($timeslots);
     }
 
     public function TFIP_Calendar_Enable_Disable_Timeslot()

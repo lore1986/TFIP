@@ -11444,3 +11444,14 @@ body {
     flex: 0 0 100% !important;
   }
 }
+
+
+
+/* FlatPick */
+.numInputWrapper .arrowUp ::after {
+  border-color: transparent transparent #000 transparent; /* arrow pointing up */
+}
+
+.numInputWrapper .arrowDown ::after {
+  border-color: #000 transparent transparent transparent; /* arrow pointing down */
+}

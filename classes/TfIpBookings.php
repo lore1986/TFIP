@@ -128,62 +128,22 @@ class TfIpBooking {
             {
                 $timeslot = $this->_ipfDatabase->TFIP_Database_Get_Specific_Timeslot($single_booking->id_timeslot);
                 $day_timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timeslot->id_date);
-                $targetTime = (new DateTime($single_booking->booking_time))->format('H:i');
-                
+                $targetTime = $single_booking->booking_time;//(new DateTime($single_booking->booking_time))->format('H:i');
+                $slots = [];
+
                 if($timeslot)
                 {
-
-                    $slots = [];
-
-                    if (count($day_timeslots) == 1) {
-
-                        $start = new DateTime($day_timeslots[0]->timeslotstart);
-                        $end = new DateTime($day_timeslots[0]->timeslotend);
-    
-                        $interval = new DateInterval('PT15M');
-                        $period = new DatePeriod($start, $interval, $end);
-    
-                        foreach ($period as $time) {
-
-                            $slot_time = $time->format('H:i');
-
-                            $slots[] = [
-                                'ids' => $day_timeslots[0]->id,
-                                'objt' => $time->format('H:i'),
-                                'valt' => $time->format('H:i'),
-                                'sel' => ($slot_time === $targetTime) ? 1 : 0
-                            ];
-                        }
-    
-                        // $slots[] = [
-                        //     'ids' => $day_timeslots[0]->id,
-                        //     'objt' => $end->format('H:i'),
-                        //     'valt' => $end->format('H:i'),
-                        //     'sel' => ($slot_time === $targetTime) ? 1 : 0
-                        // ];
-
-
-                    } else {
-
-                        foreach ($day_timeslots as $ts) {
-                            $start = new DateTime($ts->timeslotstart);
-                            $end = new DateTime($ts->timeslotend);
-    
-                            $slots[] = [
-                                'ids' => $ts->id,
-                                'objt' => $start->format('H:i') . ' - ' . $end->format('H:i'),
-                                'valt' => $start->format('H:i'),
-                                'sel' => ($start->format('H:i') === $targetTime) ? 1 : 0
-                            ];
-                        }
-                    }
+                    $slots = TFIP_Utils::TFIP_Utiles_Format_Existing_Timeslots($day_timeslots, $timeslot->id_date, $single_booking->id_timeslot, $targetTime);
                     
-                    $event_instance = null;
+
+                    //fix here
+                    $event_instance = null; 
 
                     if($single_booking->idpostevent)
                     {
                         $event_instance = get_post($single_booking->idpostevent);
                     }
+                    ////fix here
 
 
                     $obj = [
@@ -195,21 +155,7 @@ class TfIpBooking {
                         'postevent' => $event_instance
                     ];
 
-                    
-
-                    // if ($event_post && $event_post->post_type === 'tfipfevent') {
-                    //     // Access data
-                    //     $title = $event_post->post_title;
-                    //     $content = $event_post->post_content;
-
-                    //     // Example: get custom field
-                    //     $event_datetime = get_post_meta($event_id, '_tfIpf_event_date_time', true);
-
-                    //     // Output or return data
-                    //     echo "Title: $title, Date: $event_datetime";
-                    // }
-
-
+                
                 }else
                 {
                     $obj = [
@@ -323,9 +269,8 @@ class TfIpBooking {
         // id = (id slot) 
         // action
 
-
         $booking_data = [
-            'new_dateid'       => (new DateTime(sanitize_text_field($_POST['date_id'])))->getTimestamp(),
+            'new_dateid'       => ( DateTime::createFromFormat('d-m-Y', sanitize_text_field($_POST['admin_date_id'])))->setTime(0, 0, 0)->getTimestamp(),
             'id_original_slot' => intval($_POST['original_timeslot']),
             'id_new_timeslot'  => isset($_POST['id_new_timeslot']) &&  $_POST['id_new_timeslot'] != "" ? intval($_POST['id_new_timeslot']) : null,
             'id_booking'       => intval($_POST['id_booking']),
@@ -342,7 +287,8 @@ class TfIpBooking {
         $validation = $this->TFIP_Booking_Check_Update_Booking($booking_data);
         $res = null;
 
-
+        //c'e' un errore grave qui che prima non esisteva
+        
         if($validation['resolution'] == 1)
         {
             // 'new_timeslot' => $update_booking_timeslot,
@@ -356,6 +302,7 @@ class TfIpBooking {
             $booking_data = $validation['new_booking'];
             $booking_data['post_event_id'] = null; //here fix event for now if change reset only connected event //check on date and time
             
+
             $succ = $this->_ipfDatabase->TFIP_Database_Update_Booking($booking_data);
 
             $original_timeslot = $validation['original_timeslot'];
@@ -372,7 +319,7 @@ class TfIpBooking {
             {
                 if($booking_data['status'] != 0)
                 {
-                    $removed_participants = $original_booking->participants; 
+                    $removed_participants = (int)$original_booking->participants; 
                     $new_participants = $booking_data['participants'];
                 }
             }
@@ -449,54 +396,7 @@ class TfIpBooking {
     }
 
 
-    //move this function to a more general level
-    public function TFIP_Booking_Get_Create_Format_Timeslots($day_timestamp)
-    {
-        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($day_timestamp);
-        
-        if(count($timeslots) == 0)
-        {
-            $res_slots = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($day_timestamp);
-
-            if($res_slots['resolution'] == 1)
-            {
-                $default_timeslots_obj = $res_slots['timeslots'];
-
-                foreach ($default_timeslots_obj as $entry) {
-                    $slot = new stdClass();
-                    $slot->id = (string) $entry['ts']['id_slot'];
-                
-                    foreach ($entry['ts']['data_slot'] as $key => $value) {
-                        $slot->$key = (string) $value; 
-                    }
-                
-                    $timeslots[] = $slot;
-                }
-
-                return [
-                    'timeslots' => $timeslots,
-                    'resolution' => 1,
-                    'message' => "Timeslots Created"
-                ];
-            
-            }else
-            {
-                return [
-                    'timeslots' => null,
-                    'resolution' => 0,
-                    'message' => "Error creating default timeslots"
-                ];
-            }
-        }else
-        {
-            return [
-                'timeslots' => $timeslots,
-                'resolution' => 1,
-                'message' => "Timeslots Founded"
-            ];
-        }
-
-    }
+    
 
     public function TFIP_Booking_Get_Create_Active_Day($day_timestamp)
     {
@@ -514,31 +414,23 @@ class TfIpBooking {
     //ok
     public function TFIP_Booking_Check_Update_Booking($booking_data)
     {
-        // $booking_data = [
-        //     'id_new_timeslot' 
-        //     'id_booking'    
-        //     'date_booking'  
-        //     'post_event_id' 
-        //     'time_booking'  
-        //     'identification'
-        //     'phone'         
-        //     'participants'  
-        //     'extra_message' 
-        //     'status'        
-        // ];
-
-        //update new date
-        //update old date -->if different
-
-        //else
-        //update only date
-
-        
-        
         $new_active_day_id = $booking_data['new_dateid'];
-        $new_active_day = $this->TFIP_Booking_Get_Create_Active_Day($new_active_day_id);
+
+        $new_active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($new_active_day_id);
         
-        $timeslots = $this->TFIP_Booking_Get_Create_Format_Timeslots($new_active_day_id)['timeslots'];
+        if($new_active_day == null)
+        {
+            $new_active_day = $this->TFIP_Booking_Get_Create_Active_Day($new_active_day_id);
+        }
+        
+        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($new_active_day_id);
+
+        if(count($timeslots) == 0)
+        {
+            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_Create_Format_Timeslots($new_active_day_id)['timeslots'];
+        }
+        
+
         $original_booking = $this->_ipfDatabase->TFIP_Database_Get_Single_Booking($booking_data['id_booking']);
         $original_timeslot = $this->_ipfDatabase->TFIP_Database_Get_Specific_Timeslot($original_booking->id_timeslot); 
         $new_booking_timeslot = null;
@@ -547,10 +439,11 @@ class TfIpBooking {
         {
             foreach ($timeslots as $tss) {
                 
-                if(($booking_data['time_booking'] >= $tss->timeslotstart) && ($booking_data['time_booking'] <= $tss->timeslotend))
+                $ts = $tss['ts'];
+                
+                if(($booking_data['time_booking'] >= $ts->timeslotstart) && ($booking_data['time_booking'] <= $ts->timeslotend))
                 {
-                    // $booking_data['id_new_timeslot'] = $tss['id'];
-                    $new_booking_timeslot = $tss;
+                    $new_booking_timeslot = $tss['ts'];
                 }
             }
         }else
@@ -570,6 +463,10 @@ class TfIpBooking {
         {
             $booking_data['id_new_timeslot'] = $new_booking_timeslot->id;
         }
+        // }else
+        // {
+        //     $booking_data['id_new_timeslot'] = $new_booking_timeslot->id;
+        // }
 
 
         $temp_day_total_max  = 0;
@@ -577,9 +474,12 @@ class TfIpBooking {
         //$same_slot = false;
         $availables = 0;
 
-        foreach ($timeslots as $local_slot) {
-            $temp_day_total_max += $local_slot->max_bookings;
-            $day_local_active += $local_slot->active_bookings;     
+        foreach ($timeslots as $arrI) {
+            
+            $local_slot = $arrI['ts'];
+            
+            $temp_day_total_max += (int)$local_slot->max_bookings;
+            $day_local_active += (int)$local_slot->active_bookings;     
         }
 
         if($new_booking_timeslot->id == $original_timeslot->id)
@@ -817,7 +717,8 @@ class TfIpBooking {
         if($timeslots_res == null)
         {
             $timeslots_res = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($active_day_id);
-            if($timeslots_res['resolution'] == 0)
+            
+            if(count($timeslots_res) == 0)
             {
                 $return_obj['message'] = 'Error creating Timeslots';
                 return $return_obj;
@@ -838,36 +739,34 @@ class TfIpBooking {
             //select correct timeslot. selection is based on time.
             //count all the bookings already present
             
-            if(count($timeslots) == 1)
-            {
-                $temp_day_total_max += $timeslots[0]->max_bookings;
-                $temp_total_active += $timeslots[0]->active_bookings;
-
-                $booking_timeslot = $timeslots[0];
-
-            }else
-            {
+            if (count($timeslots) == 1) {
+                
+                $ts_item = $timeslots[0]['ts']; 
+            
+                $temp_day_total_max += $ts_item->max_bookings;
+                $temp_total_active  += $ts_item->active_bookings;
+            
+                $booking_timeslot = $ts_item;
+            
+            } else {
                 foreach ($timeslots as $ts) {
-                    
+                    $ts_item = $ts['ts']; 
+            
                     $dt = new DateTime();
                     $dt->setTimestamp($active_day_id);
-                    list($hours, $minutes) = explode(":", $ts->timeslotstart);
+                    list($hours, $minutes) = explode(":", $ts_item->timeslotstart);
                     $dt->setTime($hours, $minutes, 0); 
                     $ts_start_date = $dt->format('Y-m-d H:i:s.u');
-
-
-                    //$ts_start_date = DateTime::createFromFormat('H:i', $ts->timeslotstart);
-                    
+            
                     if ($ts_start_date == $timebooking) {
-                        $booking_timeslot = $ts;
+                        $booking_timeslot = $ts_item;
                     }
-                    $temp_day_total_max += $ts->max_bookings;
-                    $temp_total_active += $ts->active_bookings;
+            
+                    $temp_day_total_max += $ts_item->max_bookings;
+                    $temp_total_active  += $ts_item->active_bookings;
                 }
             }
-
-
-
+            
             if (!$booking_timeslot) {
                 
                 return [
@@ -950,7 +849,7 @@ class TfIpBooking {
 
         // Prepare booking object
         $booking = new stdClass();
-        $booking_date_raw = sanitize_text_field(esc_attr($formData['date_id']));
+        $booking_date_raw = sanitize_text_field(esc_attr($formData['admin_date_id']));
         $booking_date = new DateTime($booking_date_raw . ' 00:00:00');
 
         $id_date = $booking_date->getTimestamp();
