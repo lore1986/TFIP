@@ -2,6 +2,8 @@
   <% var ts = item.ts; %> <!-- unwrap 'ts' -->
   <option 
     data-idtimeslot="<%= ts.id %>" 
+    data-idstart="<%= ts.timeslotstart %>"
+    data-idend="<%= ts.timeslotend %>"
     value="<%= ts.timeslotstart %>" 
     <%= ts.timeslotSelected === 1 ? 'selected="selected"' : '' %>>
     <%= ts.timeslotTimeStr %>

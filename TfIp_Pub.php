@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: The Florence Irish Pub
  * Description: The Florence Irish Pub Firenze Booking
@@ -19,13 +20,12 @@ include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Pages.php');
 include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Templater.php');
 include_once(plugin_dir_path(__DIR__) . 'tfIp_Pub/classes/TFIP_Utils.php');
 
-// Shortcode and script actions
+
 add_action('wp_enqueue_scripts', 'TFIP_user_enqueue_scripts');
 add_action('admin_enqueue_scripts', 'TFIP_admin_enqueue_scripts');
-//add_action('admin_enqueue_scripts', 'TFIP_enqueue_admin_scripts_event');
 
 
-add_shortcode('tfIpfCalendarShort', 'tfIpf_calendar_all_event_shortcode');
+add_shortcode('tfIpfCalendarShort', 'TFIP_Pub_Calendar_All_Event_Shortcode');
 add_shortcode('tfIpfNoEventBooking', 'TFIP_Pub_No_Event_Booking_Shortcode_Action');
 
 // Admin plugin link
@@ -92,30 +92,45 @@ function tfip_uninstall_handler() {
     }
 }
 
-function TFIP_admin_enqueue_scripts($hook) {
-    global $post_type;
-   
-    wp_enqueue_style('tfip_admin_css', plugin_dir_url(__FILE__) . 'assets/css/TFIP-admin.css');
-    
+function TFIP_shared_script() {
+
+    wp_enqueue_style('intlTelInput', 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/css/intlTelInput.min.css');
+    wp_enqueue_script('intlTelInput', 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/js/intlTelInput.min.js', array('jquery'), null);
     wp_enqueue_style('flatpickr-css', 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css');
     wp_enqueue_script('flatpickr-js', 'https://cdn.jsdelivr.net/npm/flatpickr', array(), null, true);
+    wp_enqueue_script('undescore', includes_url('js') . '/underscore.min.js' );
 
+    wp_enqueue_script('TFIP_Shared_Script_Js',  plugin_dir_url(__FILE__) . 'src/js/shared_script.js',array('jquery', 'underscore'), null, true );
+    
+    wp_localize_script('TFIP_Shared_Script_Js', 'TFIP_Ajax_Obj', array(
+        'ajaxUrl' => admin_url('admin-ajax.php'),
+        'templatesUrl' => plugin_dir_url(__FILE__)  . 'assets/html-templates/',
+        'nonce' => wp_create_nonce('tfip')
+    ));
+}
+
+
+function TFIP_admin_enqueue_scripts($hook) {
+    
+    
+    global $post_type;
+   
+    TFIP_shared_script();
+
+    wp_enqueue_style('tfip_admin_css', plugin_dir_url(__FILE__) . 'assets/css/TFIP-admin.css');
     wp_enqueue_script('tfipf-admin-script', plugin_dir_url(__FILE__) . 'src/js/tfipf-admin.js', [], null, true);
     wp_add_inline_script('tfipf-admin-script', 'ajaxurl', admin_url('admin-ajax.php'));
 
-
     if (($hook === 'post-new.php' || $hook === 'post.php') && $post_type === 'tfipfevent') {
 
-        // JS
         wp_enqueue_script(
             'TfIpAdmin_js',
             plugin_dir_url(__FILE__) . 'src/js/tfip_admin_js.js',
-            [],//array('jquery', 'underscore', 'intlTelInput'),
+            [],
             null,
-            true // put in footer
+            true 
         );
 
-        // Localize variables
         wp_localize_script('TfIpAdmin_js', 'TFIP_Ajax_Obj', array(
             'ajaxUrl'       => admin_url('admin-ajax.php'),
             'templatesUrl'  => plugin_dir_url(__FILE__)  . 'assets/html-templates/',
@@ -128,16 +143,9 @@ function TFIP_admin_enqueue_scripts($hook) {
 
 function TFIP_user_enqueue_scripts() {
 
+    TFIP_shared_script();
+
     wp_enqueue_style('tfipf-bootstrap', plugin_dir_url(__FILE__) . 'assets/css/TFIP-boostrap.css');
-
-    wp_enqueue_style('flatpickr-css', 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css');
-    wp_enqueue_script('flatpickr-js', 'https://cdn.jsdelivr.net/npm/flatpickr', array(), null, true);
-
-
-    wp_enqueue_script('undescore', includes_url('js') . '/underscore.min.js' );
-
-    wp_enqueue_style('intlTelInput', 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/css/intlTelInput.min.css');
-    wp_enqueue_script('intlTelInput', 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/25.3.1/build/js/intlTelInput.min.js', array('jquery'), null);
 
     wp_enqueue_script('TfIpBooking_event_js',  plugin_dir_url(__FILE__) . 'src/js/event_booking.js',array('jquery', 'intlTelInput'), null, true );
     wp_localize_script('TfIpBooking_event_js', 'TFIP_Ajax_Obj', array(
@@ -160,7 +168,7 @@ function TFIP_user_enqueue_scripts() {
 }
 
 
-function tfIpf_calendar_all_event_shortcode($atts)
+function TFIP_Pub_Calendar_All_Event_Shortcode($atts)
 {
     $max_num = isset($atts['maxnum']) ? intval($atts['maxnum']) : -1;
 
@@ -183,7 +191,7 @@ function tfIpf_calendar_all_event_shortcode($atts)
     return ob_get_clean();
 }
 
-//this tooo
+
 function TFIP_Pub_No_Event_Booking_Shortcode_Action()
 {
     global $database;
@@ -193,11 +201,11 @@ function TFIP_Pub_No_Event_Booking_Shortcode_Action()
     $obj_d->date_str =  date('d-m-Y');
     $obj_d->date_stamp = strtotime($obj_d->date_str);
 
-    $obj_d->timeslots = $database->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($obj_d->date_stamp);
+    $obj_d->timeslots = $database->TFIP_Database_Get_All_Timeslots_For_Active_Day($obj_d->date_stamp);
     
     if(count($obj_d->timeslots) == 0)
     {
-        $obj_d->timeslots = TFIP_Utils::TFIP_Utils_Format_No_Create_Default_Timeslots($obj_d->date_stamp);
+        $obj_d->timeslots = TFIP_Utils::TFIP_Utils_Format_Default_Timeslots($obj_d->date_stamp);
     }else
     {
         $obj_d->timeslots = TFIP_Utils::TFIP_Utiles_Format_Existing_Timeslots($obj_d->timeslots, $obj_d->date_stamp);

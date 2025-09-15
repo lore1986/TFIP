@@ -94,7 +94,7 @@ class TfIpEvent
         {
             //get default timeslots it is a new event
             $timestamp = strtotime('today');
-            // $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timestamp);
+            // $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($timestamp);
 
         }else
         {
@@ -110,7 +110,7 @@ class TfIpEvent
             }
 
             $event_timeslot = get_post_meta( $post->ID, '_tfIpf_event_timeslot', true );
-            $timeslots =  $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timestamp);
+            $timeslots =  $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($timestamp);
 
             foreach ($timeslots as $ts) {
                 # code...
@@ -138,7 +138,8 @@ class TfIpEvent
     
         <div class="form-group mb-3">
             <label for="event_date"><?php _e('Data Evento:', 'textdomain'); ?></label>
-            <input type="text" class="form-control" id="event_date" name="event_date" data-idtime="<?php echo esc_attr($time_event); ?>" value="<?php echo esc_attr($date_event); ?>" autocomplete="off">
+            <!-- review here id-time attribute if necessary-->
+            <input type="text" class="form-control" id="event_date" name="event_date" data-idtime="<?php echo esc_attr($exact_time_event); ?>" value="<?php echo esc_attr($date_event); ?>" autocomplete="off">
         </div>
     
         <div class="form-group mb-3">
@@ -216,7 +217,7 @@ class TfIpEvent
             $day_id = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($datetimestamp);
         }
 
-        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($datetimestamp);
+        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($datetimestamp);
         
         if(count($timeslots) == 0)
         {

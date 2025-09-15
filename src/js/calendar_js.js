@@ -108,7 +108,6 @@ function save_form_admin_booking() {
 
     const valid = validateFormAdminBooking(formId);
 
-    console.log("result is " + valid)
 
     if (!valid.res) {
 
@@ -155,7 +154,6 @@ function save_form_admin_booking() {
             
             document.getElementById('message-admin').innerHTML = '';
         
-            // Determine which template to load
             let templateUrl;
             switch (response.resolution) {
                 case 3:
@@ -287,20 +285,6 @@ const list_containers = [
     'container-events'
 ]
 
-// function hide_show_layers(show_list) {
-
-//     list_containers.forEach(layer => {
-//         const element = document.getElementById(layer);
-//         if (!element) return;
-
-//         if (show_list.includes(layer)) {
-//             element.style.display = 'block';
-//         } else {
-//             element.style.display = 'none';
-//         }
-//     });
-// }
-
 function hide_show_layers(show_list) {
 
     list_containers.forEach(layer => {
@@ -308,9 +292,9 @@ function hide_show_layers(show_list) {
         if (!element) return;
 
         if (show_list.includes(layer)) {
-            element.hidden = false;  // show
+            element.hidden = false;  
         } else {
-            element.hidden = true;   // hide
+            element.hidden = true;  
         }
     });
 }
@@ -320,90 +304,70 @@ function CallBookingForm() {
     const show_list = ['booking-form-container_id']
     hide_show_layers(show_list)
 
-    let d_today = new Date;
-    d_today.setHours(0, 0, 0); 
-    let dayId = d_today.getTime() / 1000 ;
 
-    load_form_admin_booking('booking-form-container_id', 0, dayId);
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+    const dayId = Math.floor(todayUTC.getTime() / 1000);
+    const date_str = convert_date_to_string(dayId);
 
-  }
+    const newObject = {
+        dayStr: date_str,
+        dayId: dayId,
+        timeslotid: null,
+        resolution: 1,
+        message: "OK",
+        booking: null,
+        timeslot: null,
+        alltimeslots: null,
+        postevent: null
+      };
 
-  function HideBookingForm() {
+    load_form_admin_booking('booking-form-container_id', 0, newObject);
+
     
+
+}
+
+function HideBookingForm() {
+
     const btn_hide = document.getElementById('hide_form_booking_id')
     const show_list = btn_hide.getAttribute('data-list-containers');
 
     hide_show_layers(show_list)
 
-  }
+}
+
 
 
   
-  function CallBookingFormFromTimeslot(el) {
+function CallBookingFormFromTimeslot(el) {
     
     const timeslotId = el.getAttribute('data-timeslot-id');
     const dayidId = el.getAttribute('data-day-id');
     console.log(dayidId)
 
-    load_form_admin_booking('booking-form-container_id', 2, dayidId, timeslotId, null);
+    const date = new Date(dayidId * 1000);
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0'); 
+    const year = date.getUTCFullYear();
+    const date_str = `${day}-${month}-${year}`;
+
+    const newObject = {
+        dayStr: date_str,
+        dayId: dayidId,
+        timeslotid: timeslotId,
+        resolution: 1,
+        message: "OK",
+        booking: null,
+        timeslot: null,
+        alltimeslots: null,
+        postevent: null
+      };
 
 
-    // document.getElementById('container-side').style.display = 'block';
-  }
-
-
-
-
-  function updateTimeslots(date, object_name, timeslotid = null, booking_time = null, timedslot = null) {
-
-
-    jQuery.ajax({
-        url: TFIP_Ajax_Obj.ajaxUrl,
-        method: 'POST',
-        data: {
-            action: 'tfip_get_form_timeslots_booking_admin',  
-            date: date,
-            slotid: timeslotid,
-            time_s: booking_time,
-            timedslot : timedslot,
-            nonce: TFIP_Ajax_Obj.nonce
-        },
-        success: function(response) {
-            
-            console.log("update Timeslot response")
-            console.log(response)
-
-            const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/timeslots-instance-booking-form.html';
-            
-            jQuery.get(templateUrl, function(templateHtml) {
-    
-                const timeslotTemplate = _.template(templateHtml);
-                const renderedTimeslots = timeslotTemplate({ timeslots: response });
-                const timeslotSelect = document.getElementById(object_name);
-                timeslotSelect.innerHTML = '<option value="0">Seleziona orario</option>'; 
-                timeslotSelect.innerHTML += renderedTimeslots; 
-            });
-
-            return 1;
-        },
-        error: function(xhr, status, error) {
-            console.error('Error fetching timeslots:', error);
-            return 0;
-        }
-    });
-    
+    load_form_admin_booking('booking-form-container_id', 2, newObject);
 }
 
-function convert_date_to_string(times_date)
-{
-    const dateObj = new Date(parseInt(times_date) * 1000);
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-    const year = dateObj.getFullYear();
-    const dateStr = `${day}-${month}-${year}`; // Format: d-m-Y
-
-    return dateStr
-}
 
 function deleteBooking(idBooking)
 {
@@ -428,70 +392,230 @@ function deleteBooking(idBooking)
     });
 }
 
-function load_form_admin_booking(location, origin, idday, idtimeslot = null, bookingdata = null) {
-
-    document.getElementById(location).hidden = false;
-    
-    var dayId = convert_date_to_string(idday);
-    var time_booking = null;
-    
-    if(bookingdata != null)
-    {
-        time_booking = bookingdata.booking_time
-    }
-    
-    const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/main/admin-booking-form-creation.html';
-
-    jQuery.get(templateUrl, function(templateHtml){
-
-        const templateCompiled = _.template(templateHtml);
-
-        const rendered_template = templateCompiled({
-            name_div: location,
-            origin_i: origin,
-            idday_i: idday,
-            day_str : dayId,
-            idtimeslot_i: idtimeslot,
-            booking_i: bookingdata,
-            postevent: null,
-        });
-
-
-        document.getElementById(location).innerHTML = rendered_template;
-
+function get_form_admin_booking(obje)
+{
+    return new Promise((resolve, reject) =>{
         
-        var phoneInput = document.querySelector("#admin_phone");
-        
-        window.intlTelInput(phoneInput, {
-            allowDropdown: true,
-            initialCountry: "it",
-            autoPlaceholder: "polite",
-            separateDialCode: true,
-            loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.10.0/build/js/utils.js"),
-        });
-        
-        const dateInput = document.getElementById('admin_date_id');
+        console.log(obje)
+        const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/main/admin-booking-form-creation.html';
 
-        const fpConf = {
-            enableTime: false,
-            noCalendar: false,
-            dateFormat: "d-m-Y"
-        };
+        jQuery.get(templateUrl, function (templateHtml) {
 
-        flatpickr(dateInput, fpConf);
+            const templateCompiled = _.template(templateHtml);
 
-
-        let ret = updateTimeslots(dayId, 'admin_time', idtimeslot, time_booking);
-        
-        setTimeout(() => {
-            dateInput.addEventListener('change', function(event) {
-                const selectedDate = event.target.value;
-                updateTimeslots(selectedDate, 'admin_time');
+            const rendered_template = templateCompiled({
+                name_div: obje.name_div,
+                origin_i: obje.origin_i,
+                idday_i: obje.idday_i,
+                day_str: obje.day_str,
             });
-        }, 0);
 
+            document.getElementById(obje.name_div).innerHTML = rendered_template;
+
+            var phoneInput = document.querySelector("#admin_phone");
+
+            window.intlTelInput(phoneInput, {
+                allowDropdown: true,
+                initialCountry: "it",
+                autoPlaceholder: "polite",
+                separateDialCode: true,
+                loadUtils: () =>
+                    import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.10.0/build/js/utils.js"),
+            });
+
+            const dateInput = document.getElementById('admin_date_id');
+
+            const fpConf = {
+                enableTime: false,
+                noCalendar: false,
+                dateFormat: "d-m-Y"
+            };
+
+            flatpickr(dateInput, fpConf);
+
+            resolve();
+        });
+    })
+}
+
+function load_form_admin_booking(location, origin, data) {
+    
+    return new Promise((resolve, reject) => {
+        try {
+            document.getElementById(location).hidden = false;
+            
+            console.log("load answer")
+            console.log(data)
+
+            if(data.resolution === 1)
+            {
+                const dayStr = data.dayStr;
+                const dayId = data.dayId;
+
+                const obje = {
+                    name_div: location,
+                    origin_i: origin,
+                    idday_i: dayId,
+                    day_str: dayStr,
+                };
+                
+                get_form_admin_booking(obje).then(
+                    () =>
+                    {
+                        const alltimeslots = data.alltimeslots;
+
+                        console.log(data.timeslotid)
+                        console.log(alltimeslots)
+
+                        if(alltimeslots == null)
+                        {
+                            if(data.timeslotid == null)
+                            {
+                                updateTimeslots(dayStr, 'time_booking').then(
+                                    (response) => {
+                                        AttachUpdateTimeslotEvent('admin_date_id');
+                                        AttachExactTimeEvent('time_booking', 'exact_time_booking');
+                                    }
+                                )
+    
+                            }else
+                            {
+                                console.log("should call me instead")
+                                LoadExtraTimeslotFormData(data.timeslotid)
+
+                                updateTimeslots(dayStr, 'time_booking', data.timeslotid).then(
+                                    (response) => {
+                                        
+                                        var selectedTimeslot = null;
+
+                                        for (let index = 0; index < response.length; index++) {
+                                            
+                                            const element = response[index];
+                                            if(element.ts.timeslotSelected == 1)
+                                            {
+                                                selectedTimeslot = element.ts;
+                                                break;
+                                            }
+
+                                        }
+
+                                        if(selectedTimeslot != null)
+                                        {
+                                            LoadExactTimesTemplate(selectedTimeslot.exact_time);
+                                        }
+
+                                        AttachUpdateTimeslotEvent('admin_date_id');
+                                        AttachExactTimeEvent('time_booking', 'exact_time_booking');
+                                    }
+                                )
+                            }
+                            
+                        }else
+                        {
+                            Load_Timeslots(alltimeslots, 'time_booking').then(
+                                () =>
+                                {
+                                    Load_Timeslots(data.alltimeslots, 'time_booking').then(
+
+                                        () => {
+
+                                            console.log("booking called")
+                                            for (let index = 0; index < alltimeslots.length; index++) {
+                                    
+                                                const element = alltimeslots[index].ts;
+                                                
+                                                if(element.id == data.booking.id_timeslot)
+                                                {
+                                                    LoadExactTimesTemplate(element.exact_time);
+                                                    break;
+                                                }
+                                            }
+
+                                            FillBookingFormData(data.booking)
+                                            AttachUpdateTimeslotEvent('admin_date_id');
+                                            AttachExactTimeEvent('time_booking', 'exact_time_booking');
+
+                                        }
+                                    )
+                                
+                                }
+                            )
+                           
+                        }
+            
+                    }
+                )
+
+                
+                
+                resolve();
+
+            }else
+            {
+                reject("data not valid")
+            }
+
+            
+
+        } catch (err) {
+            reject(err);
+        }
     });
 }
+
+
+// function load_form_admin_booking(location, origin, idday) {
+
+//     document.getElementById(location).hidden = false;
+    
+//     var dayId = convert_date_to_string(idday);
+    
+//     const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/main/admin-booking-form-creation.html';
+
+//     jQuery.get(templateUrl, function(templateHtml){
+
+//         const templateCompiled = _.template(templateHtml);
+
+//         const rendered_template = templateCompiled({
+//             name_div: location,
+//             origin_i: origin,
+//             idday_i: idday,
+//             day_str : dayId,
+//         });
+
+
+//         document.getElementById(location).innerHTML = rendered_template;
+
+        
+//         var phoneInput = document.querySelector("#admin_phone");
+        
+//         window.intlTelInput(phoneInput, {
+//             allowDropdown: true,
+//             initialCountry: "it",
+//             autoPlaceholder: "polite",
+//             separateDialCode: true,
+//             loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.10.0/build/js/utils.js"),
+//         });
+        
+//         const dateInput = document.getElementById('admin_date_id');
+
+//         const fpConf = {
+//             enableTime: false,
+//             noCalendar: false,
+//             dateFormat: "d-m-Y"
+//         };
+
+//         flatpickr(dateInput, fpConf);
+
+    
+//         dateInput.addEventListener('change', function(event) {
+
+//             console.log(event.target.value);
+//             const selectedDate = event.target.value;
+//             updateTimeslots(selectedDate, 'time_booking');
+//         });
+//     });
+// }
 
 function Call_Ajax_On_New_Timeslot() {
 
@@ -513,7 +637,7 @@ function Call_Ajax_On_New_Timeslot() {
     
     const formObject = Object.fromEntries(formData.entries());
     
-    // console.log("Form Data :" + formData);
+
 
     jQuery.ajax({
         url: TFIP_Ajax_Obj.ajaxUrl,
@@ -548,6 +672,7 @@ function Call_Ajax_On_New_Timeslot() {
         }
     });
 }
+
 
 function addNewTimeslot() {
     
@@ -646,9 +771,7 @@ function ConfirmDeleteTimeslot(el)
             dayid: day_id
         },
         success: function (response)
-        {
-            // console.log(response);
-            
+        {            
             if(response.resolution == 1)
             {
                 render_edit_timeslots(day_id);
@@ -700,10 +823,6 @@ function EnableDisableSlot(el)
     })
 }
 
-function findBookingById(bookingsArray, id) {
-    return bookingsArray.find(booking => booking.idbooking === id);
-}
-
 
 function Switch_Back_To_Calendar(id_call, id_day)
 {
@@ -727,8 +846,6 @@ function Switch_Back_To_Calendar(id_call, id_day)
 
     hide_show_layers(show_list);
 
-
-    
 }
 
 function Update_Max_Booking_For_Timeslot(el)
@@ -791,7 +908,7 @@ function Update_form_admin_booking()
 
     console.log(formData)
 
-    const selectTimeslot = document.getElementById('admin_time')
+    const selectTimeslot = document.getElementById('time_booking')
     const selectedIndex = selectTimeslot.options['selectedIndex'];
     const selected_slot = selectTimeslot.options[selectedIndex].getAttribute('data-idtimeslot');
 
@@ -814,8 +931,7 @@ function Update_form_admin_booking()
             let $class_warning = 'txt';
             const ad_message = data.message;
             $class_warning = (data.resolution == 1) ? 'alert-success' : 'alert-warning';
-    
-            // Load the template via jQuery
+
             jQuery.get(templateUrl, function(templateHtml) {
                 const templateCompiled = _.template(templateHtml);
                 const renderedTemplate = templateCompiled({
@@ -835,48 +951,7 @@ function Update_form_admin_booking()
             console.error('AJAX error:', error);
         }
     });
-    
 
-    // fetch(TFIP_Ajax_Obj.ajaxUrl, {
-    //     method: 'POST',
-    //     body: new URLSearchParams(formObject),
-    //     headers: {
-    //         'Content-Type': 'application/x-www-form-urlencoded',
-    //     }
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-
-
-    //     const dateTimestamp = data.date_booking;
-
-    //     let $class_warning = 'txt';
-    //     ad_message =  data.message;
-    //     data.resolution == 1 ? $class_warning = 'alert-success' : $class_warning = 'alert-warning';
-
-    //     jQuery.get(templateUrl, function (templateHtml) {
-    //         const templateCompiled = _.template(templateHtml);
-    //         const renderedTemplate = templateCompiled({
-    //             adminmessage: ad_message,
-    //             alertclass: $class_warning
-    //         });
-    //         document.getElementById('form-error-booking').innerHTML = renderedTemplate;
-    //     });
-
-    //     if(data.resolution == 1)
-    //     {
-    //         PrintDayBookings(dateTimestamp)
-    //         hide_show_layers(['container-timeslots-bookings'])
-    //     }
-
-        
-    //     return;
-
-
-    // })
-    // .catch(error => {
-    //     console.error('AJAX error:', error);
-    // });
 }
 
 
@@ -884,7 +959,6 @@ function Update_form_admin_booking()
 function CallBookingDetails(el) {
     
     const bookingId = el.getAttribute('data-booking-id');
-    // const slotId = el.getAttribute('data-slot-id');
 
     jQuery.ajax({
         url: TFIP_Ajax_Obj.ajaxUrl,
@@ -902,9 +976,10 @@ function CallBookingDetails(el) {
             const show_list = [
                 'booking-form-container_id',
             ]
+            
             hide_show_layers(show_list)
 
-            load_form_admin_booking('booking-form-container_id', 1, data.timeslot.id_date, data.timeslot.id, data.booking);
+            load_form_admin_booking('booking-form-container_id', 1, data);
 
         },
         error: function(xhr, status, error) {
@@ -913,6 +988,57 @@ function CallBookingDetails(el) {
     });
 }
 
+function LoadExtraTimeslotFormData(idtimeslot)
+{
+    const urlExtraTimeslot = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/add-booking-extra-form-data.html';
+
+    jQuery.get(urlExtraTimeslot, function(htmlTemplate)
+    {
+        const extraTimeslotIdInput = _.template(htmlTemplate);
+        const renderTempExtraTs = extraTimeslotIdInput({
+            idtimeslot: idtimeslot
+        })
+        
+        const extraData = document.getElementById('extra-form-data');
+        extraData.innerHTML = renderTempExtraTs; 
+    })
+}
+
+function FillBookingFormData(booking)
+{
+    return new Promise((resolve, reject) =>
+    {
+        try{
+            const urlExtraform = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/existing-booking-extra-form-data.html';
+
+            jQuery.get(urlExtraform, function(templateHtml) {
+
+                const extraBookingData = _.template(templateHtml);
+                const renderedextraBookingData = extraBookingData({ 
+                    idbooking: booking.idbooking,
+                    idtimeslot: booking.id_timeslot });
+
+                const extraData = document.getElementById('extra-form-data');
+                extraData.innerHTML = renderedextraBookingData; 
+
+
+                document.getElementById('admin_identification').value = booking.identification;
+                document.getElementById('admin_participants').value = booking.participants;
+                document.getElementById('admin_phone').value = booking.phone;
+                document.getElementById('admin_extra_message').innerText = booking.extra_message;
+                document.getElementById('admin_code').value = booking.code;
+
+                document.getElementById("admin_status").value = booking.status == 1 ? 'confirmed' : 'forwarded';
+                
+                resolve();
+            });
+        }catch(err)
+        {
+            reject(err);
+        }
+    })
+
+}
 
 
 function PrintDayBookings(timestampdate) {
@@ -983,8 +1109,6 @@ function render_edit_timeslots(day_id)
           dayid: day_id,
         },
         success: function(response) {
-            
-            
 
             const rendered_underscore = compiledTimeslots({
                 timeslots: response.timeslots,
@@ -998,12 +1122,6 @@ function render_edit_timeslots(day_id)
             
             hide_show_layers(['container-timeslots-edit']);
             document.getElementById('container-timeslots-edit').innerHTML = rendered_underscore;
-            // document.getElementById('main-calendar').style.display = 'none';
-            // document.getElementById('container-timeslots-edit').innerHTML = rendered_underscore;
-            // document.getElementById('container-timeslots-edit').style.display = 'inherit';
-
-
-
         },
         error: function(xhr, status, error) {
           console.error('AJAX error:', error);
@@ -1034,6 +1152,7 @@ function handleClickEnd(el, start) {
       PrintDayBookings(date);
     }
   }
+
 
 function ajax_admin_call_calendar(direction = null, date = null) {
 
@@ -1074,12 +1193,6 @@ function ajax_admin_call_calendar(direction = null, date = null) {
           document.getElementById('calendar-container').innerHTML = rendered_underscore;
           document.getElementById('date-text-val').innerText = newDate;
           document.getElementById('date-val').innerText = timestampNew;
-
-        //   const forwardButton = document.getElementById('next-month');
-        //   const backwardButton = document.getElementById('prev-month');
-
-        //   forwardButton.addEventListener('click', ()=>{ ajax_admin_call_calendar(1)})
-        //   backwardButton.addEventListener('click', ()=>{ ajax_admin_call_calendar(0)})
 
           document.querySelectorAll('.clickable-day').forEach(function(element) {
             let start;

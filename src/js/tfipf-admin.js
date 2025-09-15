@@ -1,37 +1,10 @@
 
 
-function ExtendDates(){
-
-
-    jQuery.ajax({
-        url : ajaxurl,
-        type: 'POST',
-        data: {
-            action: 'tfipf_extend_dates_instances',
-            //nonce: tfipf_ajax_object.nonce
-        },
-        success: function(response) {
-
-            // var succeded = response.succeded;
-            var ddate = response.date;
-
-            alert("Success, update dates last date now is: " + ddate);
-        },
-        error: function(xhr, status, error) {
-            // console.log(error)
-            //alert('An error occurred: ' + error);
-        }
-    });
-}
-
 const fpConf = {
     enableTime: true,
     noCalendar: true,
     dateFormat: "H:i",
     time_24hr: true,
-    defaultHour: 17,
-    // minTime: "17:00",
-    // maxTime: "23:59",
     minuteIncrement: 1
 };
 

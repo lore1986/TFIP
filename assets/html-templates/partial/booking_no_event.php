@@ -1,9 +1,12 @@
 <div class="calendario-prenotazione TFIP-style">
     <div id="container-booking">
+        <div class="row">
+            <div class="alert alert-warning" role="alert" id="alert-booking" hidden></div>
+        </div>
         <div id="tmp-loaded-form">
-            <input type="number"  id="datestamp" name="datestamp" value="<?php echo esc_html( $objdata->date_stamp ); ?>"   />
+            <input type="number"  id="datestamp" name="datestamp" value="<?php echo esc_html( $objdata->date_stamp ); ?>"  hidden  />
             <div class="row">
-                <div class="col-7">
+                <div class="col-12 col-md-5 mb-2">
                     <input type="text" 
                         class="form-control time-input" 
                         id="date_str" 
@@ -11,21 +14,18 @@
                         value="<?php esc_html( $objdata->date_stamp ) ?>" />
                 </div>
 
-                <div class="col-5">
-                    <select id="client_time" name="client_time" class="form-control form-select">
-                    <option value="0">Seleziona orario</option>
-                    <?php if (!empty($objdata->timeslots)) { ?>
-                        <?php foreach ($objdata->timeslots as $slotWrapper) { ?>
-                            <?php $slot = $slotWrapper['ts'];  ?>
-                            <option value="<?php echo esc_html($slot['timeslotstart']); ?>">
-                                <?php echo esc_html($slot['timeslotTimeStr']); ?>
-                            </option>
-                        <?php } ?>
-                    <?php } ?>
+                <div class="col-12 col-md-3 mb-2">
+                    <select id="client_timeslot" name="client_timeslot" class="form-control form-select">
+                        <option value="0">Seleziona Fascia Oraria</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-3 mb-2">
+                    <select id="exact_client_time" name="exact_client_time" class="form-control form-select">
+                        <option value="0">Specifica un orario</option>
                     </select>
                 </div>
             </div>
-
             <button type="button" id="button-no-event-booking"  onclick="BookNoEvent()" class="btn button-no-event-booking btn-success">
                 Prenota
             </button>                    
@@ -37,40 +37,19 @@
 
 <script>
     
-    const date_str = document.getElementById('date_str');
 
     document.addEventListener('DOMContentLoaded', function () {
+        
         flatpickr(date_str, {
             dateFormat: "d-m-Y",
             minDate: "today",
             defaultDate: "<?= esc_html( $objdata->date_str ) ?>"
         });
-    });
 
-    date_str.addEventListener("change", (event) => {
-        
-        let n_date_str = document.getElementById('date_str').value;
-        
-        jQuery.ajax({
-            url: TFIP_Ajax_Obj.ajaxUrl,
-            method: 'POST',
-            data: {
-                action: 'tfip_update_timestamp',  
-                date: n_date_str,
-                nonce: TFIP_Ajax_Obj.nonce
-            },
-            success: function(response) {
+        Load_Timeslots(<?= wp_json_encode( $objdata->timeslots ) ?>, 'client_timeslot');
 
-                console.log(response)
-                document.getElementById('datestamp').value = response.datestamp;
-            },
-            error: function(xhr, status, error) {
-                console.error('Error fetching timeslots:', error);
-            }
-        });
-        
-
-        updateTimeslots(n_date_str, 'client_time');
+        AttachUpdateTimeslotEvent('datestamp');
+        AttachExactTimeEvent('client_timeslot', 'exact_client_time');
     });
 
 
@@ -78,10 +57,45 @@
     function BookNoEvent()
     {
         var date = document.getElementById('date_str').value;
-        var time = document.getElementById('client_time').value;
+        var timeslot = document.getElementById('client_timeslot').value;
+        var exactTime = document.getElementById('exact_client_time').value;
         var datestamp = document.getElementById('datestamp').value;
 
-        LoadBaseClientBookingForm(null, null, datestamp, time);
 
+        jQuery.ajax({
+            url: TFIP_Ajax_Obj.ajaxUrl,
+            method: 'POST',
+            data: {
+                action: 'tfip_Check_If_Closed_or_Full',
+                nonce: TFIP_Ajax_Obj.nonce,
+                dayId: datestamp,
+                btime: exactTime,
+                tstime: timeslot
+            },
+            success: function(response) {
+                
+                const alertb = document.getElementById('alert-booking');
+
+                if(response.resolution == 1)
+                {
+                    alertb.innerText = response.message;
+                    alertb.hidden = true;
+                    LoadBaseClientBookingForm(null, null, datestamp, exactTime);
+
+                }else
+                {
+                    alertb.innerText = response.message;
+                    alertb.hidden = false;
+                }
+                
+
+                
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', error);
+            }
+        })
+
+        
     }
 </script>

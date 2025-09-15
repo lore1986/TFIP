@@ -9,8 +9,7 @@ include_once (plugin_dir_path( __FILE__ ) . 'TFIP_Database.php');
 class TfIpCalendar {
 
     private TFIP_Database $_ipfDatabase;
-    // private $startingDate;
-    private $daysArr = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  
     private $months = [
         0 => 'December',
         1 => 'January',
@@ -26,12 +25,21 @@ class TfIpCalendar {
         11 => 'November',
       ];
 
-    function __construct(TFIP_Database $database, $start_date = null){
+    function __construct(TFIP_Database $database){
+
+
+        $this->_ipfDatabase = $database;
 
         add_action( 'wp_ajax_tfip_get_all_bookings_calendar', array($this, 'TFIP_Calendar_all_bookings_calendar'));
         
-        add_action('wp_ajax_tfip_get_form_timeslots_booking_admin', array($this, 'TFIP_Calendar_Get_Timeslots_Date'));
-        add_action('wp_ajax_nopriv_tfip_get_form_timeslots_booking_admin', array($this, 'TFIP_Calendar_Get_Timeslots_Date'));
+        add_action('wp_ajax_TFIP_Calendar_Get_Timeslots', array($this, 'TFIP_Calendar_Get_Timeslots'));
+        add_action('wp_ajax_nopriv_TFIP_Calendar_Get_Timeslots', array($this, 'TFIP_Calendar_Get_Timeslots'));
+
+        add_action('wp_ajax_TFIP_Calendar_Exact_Booking_Time', array($this, 'TFIP_Calendar_Exact_Booking_Time'));
+        add_action('wp_ajax_nopriv_TFIP_Calendar_Exact_Booking_Time', array($this, 'TFIP_Calendar_Exact_Booking_Time'));
+
+        add_action('wp_ajax_nopriv_tfip_Check_If_Closed_or_Full', array($this, 'TFIP_Calendar_Check_If_Closed_or_Full'));
+        add_action('wp_ajax_tfip_Check_If_Closed_or_Full', array($this, 'TFIP_Calendar_Check_If_Closed_or_Full'));
 
 
         add_action( 'wp_ajax_tfip_unblock_day', array($this, 'TFIP_Calendar_Unblock_Day'));
@@ -58,32 +66,76 @@ class TfIpCalendar {
 
         
 
-        
-
-        
-        // add_action( 'wp_ajax_ipf_editMaxCapacity', array( $this, 'ipf_editMaxCapacity'));
-        // add_action( 'wp_ajax_tfipf_conf_book', array( $this, 'tfipf_conf_book'));
-        // add_action( 'wp_ajax_tfipf_delete_booking', array( $this , 'tfipf_delete_booking'));
-
         add_action( 'wp_ajax_get_calendar_html', array($this, 'get_calendar_html'));
         add_action( 'wp_ajax_nopriv_get_calendar_html', array($this, 'get_calendar_html'));
 
-        // add_action( 'wp_ajax_tf_ipf_get_admin_calendar', array($this, 'get_admin_calendar'));
 
+    }
+
+    function TFIP_Calendar_Check_If_Closed_or_Full()
+    {
+        $res = [
+            'resolution'=> 1,
+            'message' => "OK"
+        ];
+
+        $day_id = null;
+        $timeslotTimeRange = null;
+        $bookingTime = null;
         
-        
-        
+        if(isset($_POST['dayId']) && intval($_POST['dayId']) != 0 && sanitize_text_field( $_POST['dayId']) != '')
+        {
+            $day_id = intval($_POST['dayId']);   
+        }
 
-        // add_action( 'wp_ajax_tfipf_return_edit_booking_form_ajax', array($this, 'tfipf_return_edit_booking_form_ajax'));
-        // add_action( 'wp_ajax_ifpsave_edit_booking', array($this, 'ifpsave_edit_booking'));
+        if(isset($_POST['tstime']) && sanitize_text_field( $_POST['tstime']) != '')
+        {
+            $timeslotTime = sanitize_text_field($_POST['tstime']);   
+        }
 
-        // if ($start_date === null) {
-        //     $this->startingDate = date('d-m-Y');
-        // } else {
-        //     $this->startingDate = $start_date;
-        // }
+        if(isset($_POST['btime']) && sanitize_text_field( $_POST['btime']) != '')
+        {
+            $bookingTime = sanitize_text_field($_POST['btime']);   
+        }
 
-        $this->_ipfDatabase = $database;
+
+
+        $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($day_id);
+
+        if($active_day)
+        {
+            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day->id_date);
+
+            if(count($timeslots) == 0)
+            {
+                $timeslots = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($active_day->id_date);
+                wp_send_json($res);
+
+            }else
+            {
+                $timeslot = null;
+                $timeslot = TFIP_Utils::TFIP_Utils_Return_Timeslot_For_Selected_Time($timeslots, $active_day->id_date, $bookingTime);
+                
+                if(($timeslot->active_bookings >= $timeslot->max_bookings) || !$timeslot->active)
+                {
+                    $res = [
+                        'resolution'=> 0,
+                        'message' => "Booking for the specific date and time are not available."
+                    ];
+
+                    wp_send_json($res);
+
+                }else
+                {
+                    wp_send_json($res);
+                }
+
+            }
+
+        }else
+        {
+            wp_send_json($res);
+        }
     }
 
     function TFIP_Calendar_Enable_Disable_Day()
@@ -199,10 +251,9 @@ class TfIpCalendar {
                 $obj_ret['confirmed_bookings'][] = $obj_booking;
                 
             }
-            // $confirmed_bookings = null;
+
             wp_send_json($obj_ret);
-            //get bookings for the day
-            //
+
         }
     }
     
@@ -224,14 +275,8 @@ class TfIpCalendar {
 
     function TFIP_Calendar_Create_New_Timeslot() {
         
-        // // Nonce check (optional but recommended)
-        // if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'your_nonce_action')) {
-        //     wp_send_json_error(['message' => 'Invalid nonce']);
-        // }
-
         $obj = [];
 
-        // Access the form values
         $start = sanitize_text_field($_POST['start']);
         $end = sanitize_text_field($_POST['end']);
         $max_bookings = intval($_POST['max_bookings']);
@@ -247,13 +292,15 @@ class TfIpCalendar {
         
         }else
         {
-            //check if day exist
+
             $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($id_day);
             
             if(!$active_day)
             {
                 $active_day = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($id_day);
             }
+
+            $existing_timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day->id_date);
 
             $single_slot = [
                 'id_date' => $id_day,
@@ -265,16 +312,53 @@ class TfIpCalendar {
             ];
 
             $newtimeslots[] = $single_slot;
-            $validation = $this->_ipfDatabase->TFIP_Database_Create_TimeSlots($newtimeslots);
 
-            $obj ['resolution'] = $validation ['resolution'];
-            $obj ['message'] = $validation ['message'];
-            $obj ['iddate'] = $id_day;
+            if(count($existing_timeslots) == 0)
+            { 
+                $validation = $this->_ipfDatabase->TFIP_Database_Create_TimeSlots($newtimeslots);
+    
+                $obj ['resolution'] = $validation ['resolution'];
+                $obj ['message'] = $validation ['message'];
+                $obj ['iddate'] = $id_day;
+
+            }else
+            {
+                $valid = true;
+                
+                for ($i=0; $i < count($existing_timeslots); $i++) { 
+                    
+                    $ts = $existing_timeslots[$i];
+
+                    $valid = TFIP_Utils::TFIP_Utils_Check_Time_Range($single_slot['start'], $single_slot['end'], 
+                        $ts->timeslotstart, $ts->timeslotend);
+                    
+                    if(!$valid)
+                    {
+                        $obj ['resolution'] = 0;
+                        $obj ['message'] = 'Timeslot are overlapping, cannot create';
+                        $obj ['iddate'] = $id_day;
+                        break;
+                    }
+
+                }
+
+                if($valid)
+                {
+                    $validation = $this->_ipfDatabase->TFIP_Database_Create_TimeSlots($newtimeslots);
+    
+                    $obj ['resolution'] = $validation ['resolution'];
+                    $obj ['message'] = $validation ['message'];
+                    $obj ['iddate'] = $id_day;
+                }
+            }
+
+            
 
         }
 
         wp_send_json($obj);
     }
+
 
     public function TFIP_Calendar_Return_TimeSlots_For_Editing()
     {
@@ -376,11 +460,31 @@ class TfIpCalendar {
         }
     }
 
+
+    public function TFIP_Calendar_Exact_Booking_Time()
+    {
+        $timestart = null;
+        $timeend = null;
+
+        if (isset($_POST["timestart"]) && $_POST["timestart"] !== "" && isset($_POST["timeend"]) && $_POST["timeend"] !== "" ) {
+
+            $timestart = sanitize_text_field($_POST["timestart"]);
+            $timeend =sanitize_text_field($_POST["timeend"]);
+        }
+
+        if($timestart != null && $timeend != null)
+        {
+            $exactTimes = TFIP_Utils::TFIP_Utils_Search_Return_Exact_Times($timestart, $timeend);
+        
+            wp_send_json($exactTimes);
+        }
+    }
+
     /*
         ///TFIP///
         Function get form for booking admin
     */
-    public function TFIP_Calendar_Get_Timeslots_Date()
+    public function TFIP_Calendar_Get_Timeslots()
     {
         
         setlocale(LC_TIME, 'it_IT.utf8');
@@ -390,8 +494,6 @@ class TfIpCalendar {
         $timestamp = $today->getTimestamp(); 
         $slotid = 0;
         $slot_time = null;
-        $timedslot = 0;
-
         
         if (isset($_POST["date"]) && $_POST["date"] !== "") {
 
@@ -410,21 +512,16 @@ class TfIpCalendar {
             $slot_time = sanitize_text_field( $_POST["time_s"]);
         }
 
-        // if(isset($_POST["timedslot"]) && $_POST["timedslot"] !== "")
-        // {
-        //     $timedslot = intval( $_POST["timedslot"]);
-        // }
-        
-
-        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timestamp); 
+        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($timestamp); 
 
         if(count($timeslots) == 0)
         {
-            $timeslots = TFIP_Utils::TFIP_Utils_Format_No_Create_Default_Timeslots($timestamp);
+            $timeslots = TFIP_Utils::TFIP_Utils_Format_Default_Timeslots($timestamp);
         }else
         {
             $timeslots = TFIP_Utils::TFIP_Utiles_Format_Existing_Timeslots($timeslots, $timestamp, $slotid, $slot_time);
         }
+
 
         wp_send_json($timeslots);
     }
@@ -590,44 +687,7 @@ class TfIpCalendar {
         wp_send_json($response);
     }
 
-    public function returnMonthsArray()
-    {
-        return $this->daysArr;
-    }
 
-    /*
-        id [primarykey] |--| id_date (reference to table 1, datetimestampfield) |--| timeslotstart (format HH:MM) |--| 
-        timeslots end (format HH:MM) (can be null) |--| max number of allowed bookings |--| active / no active (int 1/0)
-
-        ...wp_tfip_bookings
-    */
-
-    // public function TFIP_Create_Timeslot($timestamp_date, $start, $end)
-    // {
-    //     global $wpdb;
-
-    //     $table_name = $wpdb->prefix . 'wp_tfip_bookings';
-
-    //     $data = array(
-    //         'id_date' => $timestamp_date,
-    //         'participants' => $participants,
-    //         'identification' => $identification,
-    //         'phone' => $phone,
-    //         'extra_message' => $extra_message,
-    //         'post_event_id' => $post_event_id,
-    //         'status' => $status,
-    //         'time_booking'=> $timebooking,
-    //         'date_id' => $iddate
-    //     );
-
-    //     $success = $wpdb->insert($table_name, $data);
-
-    //     if ($success !== false) {
-    //         return $wpdb->insert_id;
-    //     } else {
-    //         return false;
-    //     }
-    // }
 
     public function tfipf_conf_book()
     {
@@ -671,100 +731,6 @@ class TfIpCalendar {
         }
     }
 
-    public function tfipf_delete_booking()
-    {
-        if(isset($_POST["booking_id"]))
-        {
-            global $wpdb;
-
-            $bookingid = $_POST["booking_id"];
-
-            $table = $wpdb->prefix . 'ipf_bookings';
-
-            $query = $wpdb->get_results($wpdb->prepare(
-                "SELECT * from $table WHERE id = %d", $bookingid
-            ));
-
-            $booking = $query[0];
-
-            $table = $wpdb->prefix . 'ipf_days_date';
-            $query = $wpdb->get_results($wpdb->prepare(
-                "SELECT * from $table WHERE id = %d", $booking->date_id
-            ));
-
-            $ddate = $query[0];
-
-            $totbookings = $ddate->bookings;
-
-            $updatedbookingsval = 0;
-
-            if($booking->status == "confirmed")
-            {
-                // if(intval($totbookings + $booking->participants) > intval($ddate->max_participants))
-                // {
-                //     $updatedbookingsval = $totbookings - $ddate->max_participants;
-                // }else
-                // {
-                //     $updatedbookingsval = intval($totbookings + $booking->participants);
-                // }
-
-                $updatedbookingsval = intval($totbookings - $booking->participants );
-
-                $re = $wpdb->update(
-                    $table,
-                    array('bookings' => $updatedbookingsval),
-                    array('id' => intval($ddate->id)),
-                    array('%d'),
-                    array('%d')
-                );
-
-            }
-
-
-            $table = $wpdb->prefix . 'ipf_bookings';
-            $result = $wpdb->delete(
-                $table,
-                array(
-                    'id' => intval($booking->id)
-                ),
-                array(
-                    '%d'
-                )
-            );
-
-            wp_reset_query();
-            echo $result;
-            exit();
-
-
-        }
-    }
-
-   
-
-    
-    public function ipf_editMaxCapacity()
-    {
-        if(isset($_POST['daydate']) && isset($_POST['capacity']))
-        {
-            $timestampday = sanitize_text_field( $_POST['daydate'] );
-            $capacity = sanitize_text_field( $_POST['capacity'] );
-
-            $result = $this->_ipfDatabase->EditMaxCapacity($timestampday, $capacity);
-
-            $html = "";
-
-            $result == true  ? $html .= '<div id="edit_'.$timestampday .'" >
-            <span class="span_args_max"> Massima Capienza:'. $capacity .'</span>
-            <i class="fa-solid fa-pencil"  data-id="'. $timestampday .
-            '" data-max="'. $capacity .'"  onclick="EditMaxCapacity(this)"  ></i></div>'
-            : $html .= '<span><i class="fa fa-times text-warning"></i>  massima capienza non puo essere minore del numero di prenotazioni </span>';
-
-            echo $html;
-            exit();
-        }
-    }
-
 
     /*
     * Registered action to output full calendar
@@ -774,7 +740,7 @@ class TfIpCalendar {
         if(isset($_POST['maxnum']))
         {
             $maxnum = sanitize_text_field($_POST['maxnum']);
-            $calendar_events = $this->_ipfDatabase->tfIpf_event_query_list(intval($maxnum));
+            $calendar_events = $this->_ipfDatabase->TFIP_Database_Event_Query_List(intval($maxnum));
             $html = $this->tfIpf_render_events_list($calendar_events);
             echo $html;
             exit();
@@ -877,264 +843,130 @@ class TfIpCalendar {
         return $this->months[$current_month_number - 1];
     }
 
-    public function tfipf_return_edit_booking_form_ajax()
-    {
-        $html = '';
+    
 
-        if(isset($_POST["bookingid"]))
-        {
-            $bookingid = sanitize_text_field( $_POST['bookingid'] );
+    // public function tfIpf_return_booking_by_id($bookingid)
+    // {
+    //     global $wpdb;
 
-            $booking = $this->tfIpf_return_booking_by_id(intval($bookingid));
-            $booking_time = date("H:i", strtotime($booking->time_booking));
-            
-            $html = '
-                    <form id="editBookingForm">
-                        <div class="row  mb-3">
-                            <input type="hidden" value="'. $booking->id. '" id="bookingid" name="bookingid" />
-                            <div class="col-12 col-md-6 admin-modifica">
-                                <label for="time_booking">Orario:</label>
-                                <select id="time_booking" name="time_booking" class="form-control form-select">
-                                    <option value="0">Seleziona orario</option>
-                                    <option value="17:00"  '. ($booking_time == "17:00" ? "selected" : "") . ' >17:00</option>
-                                    <option value="17:15"  '. ($booking_time == "17:15" ? "selected" : "") . ' >17:15</option>
-                                    <option value="17:30"  '. ($booking_time == "17:30" ? "selected" : "") . ' >17:30</option>
-                                    <option value="17:45"  '. ($booking_time == "17:45" ? "selected" : "") . ' >17:45</option>
-                                    <option value="18:00"  '. ($booking_time == "18:00" ? "selected" : "") . ' >18:00</option>
-                                    <option value="18:15"  '. ($booking_time == "18:15" ? "selected" : "") . ' >18:15</option>
-                                    <option value="18:30"  '. ($booking_time == "18:30" ? "selected" : "") . ' >18:30</option>
-                                    <option value="18:45"  '. ($booking_time == "18:45" ? "selected" : "") . ' >18:45</option>
-                                    <option value="19:00"  '. ($booking_time == "19:00" ? "selected" : "") . ' >19:00</option>
-                                    <option value="19:15"  '. ($booking_time == "19:15" ? "selected" : "") . ' >19:15</option>
-                                    <option value="19:30"  '. ($booking_time == "19:30" ? "selected" : "") . ' >19:30</option>
-                                    <option value="19:45"  '. ($booking_time == "19:45" ? "selected" : "") . ' >19:45</option>
-                                    <option value="20:00"  '. ($booking_time == "20:00" ? "selected" : "") . ' >20:00</option>
-                                    <option value="20:15"  '. ($booking_time == "20:15" ? "selected" : "") . ' >20:15</option>
-                                    <option value="20:30"  '. ($booking_time == "20:30" ? "selected" : "") . ' >20:30</option>
-                                    <option value="20:45"  '. ($booking_time == "20:45" ? "selected" : "") . ' >20:45</option>
-                                    <option value="21:00"  '. ($booking_time == "21:00" ? "selected" : "") . ' >21:00</option>
-                                    <option value="21:15"  '. ($booking_time == "21:15" ? "selected" : "") . ' >21:15</option>
-                                    <option value="21:30"  '. ($booking_time == "21:30" ? "selected" : "") . ' >21:30</option>
-                                    <option value="21:45"  '. ($booking_time == "21:45" ? "selected" : "") . ' >21:45</option>
-                                    <option value="22:00"  '. ($booking_time == "22:00" ? "selected" : "") . ' >22:00</option>
-                                    <option value="22:15"  '. ($booking_time == "22:15" ? "selected" : "") . ' >22:15</option>
-                                    <option value="22:30"  '. ($booking_time == "22:30" ? "selected" : "") . ' >22:30</option>
-                                    <option value="22:45"  '. ($booking_time == "22:45" ? "selected" : "") . ' >22:45</option>
-                                    <option value="23:00"  '. ($booking_time == "23:00" ? "selected" : "") . ' >23:00</option>
-                                    <option value="23:15"  '. ($booking_time == "23:15" ? "selected" : "") . ' >23:15</option>
-                                    <option value="23:30"  '. ($booking_time == "23:30" ? "selected" : "") . ' >23:30</option>
-                                </select>
-                            </div>                          
-                            <div class="col-12 col-md-6 admin-modifica mb-3">
-                                <label for="date_id">Data prenotazione:</label>
-                                <input type="text" class="form-control"  value="'. date('Y-m-d', $booking->date_id) . '" id="date_id" name="date_id">
-                            </div>
-                        </div>
-                        <div class="row  mb-3">
-                            <div class="col-12 col-md-6 admin-modifica">
-                                <label for="admin_identification">Nome:</label>
-                                <input type="text" class="form-control" value="'. $booking->identification . '" id="identification"  name="identification">
-                            </div>
-                            <div class="col-12 col-md-6 admin-modifica">
-                                <label for="admin_participants">Numero partecipanti:</label>
-                                <input type="number" class="form-control" value="'. $booking->participants . '" id="participants" name="participants">
-                            </div>
-                        </div>
-                        <div class="row  mb-3">
-                            <div class="col-12 col-md-4 admin-modifica">
-                                <label for="phone">Numero di telefono:</label>
-                                <input type="text" class="form-control" value="'.  $booking->phone . '" id="phone"  name="phone">
-                            </div>
-                            <div class="col-12 col-md-8 admin-modifica">
-                                <label for="extra_message">Richieste particolari:</label>
-                                <textarea class="form-control" id="extra_message" name="extra_message">'. $booking->extra_message . '</textarea>
-                            </div>
-                        </div>
-                        <div class="row  mb-3">
-                            <div class="col-12 col-md-6 admin-modifica">
-                                <label for="tatus">Stato:</label>
-                                <select class="form-control"  id="status" name="status">
-                                    <option value="confirmed" '. ($booking->status == "confirmed" ? "selected" : "") . '> Confermata </option>
-                                    <option value="forwarded" '. ($booking->status == "forwarded" ? "selected" : "") . '> Inoltrata </option>
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-6 admin-modifica">
-                                <label for="code">Code:</label>
-                                <input class="form-control" value="'. $booking->code . '" id="code" name="code" disabled>
-                            </div>
-                        </div>
-                        <div class="row  mb-3">
-                            <div class="col-12">
-                                <button type="button" onclick="save_edit_form_data()" class="refresh-booking">Aggiorna prenotazione</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            <script>
-                jQuery(\'#date_id\').datepicker({
-                    autoclose: true,
-                    todayHighlight: true,
-                    startDate: new Date('. date('Y-m-d', $booking->date_id) . '),
-                    format: "dd/mm/yy",
-                }).datepicker(\'update\', new Date())
+    //     $query = $wpdb->prepare("
+    //         SELECT *
+    //         FROM {$wpdb->prefix}ipf_bookings
+    //         WHERE id = %d
+    //     ", $bookingid);
+
+    //     $booking = $wpdb->get_row($query);
+
+    //     if ($booking) {
+
+    //         return $booking;
+
+    //     } else {
+
+    //         return false;
+    //     }
+    // }
+
+    // public function ifpsave_edit_booking()
+    // {
+    //     if (isset($_POST['formData'])) {
+
+    //         global $wpdb;
+
+    //         $formData = json_decode(stripslashes($_POST['formData']), true);
+
+    //         $booking = new stdClass();
+    //         $booking->id = intval($formData['bookingid']);
+    //         $booking->post_event_id = intval($formData['post_event_id']);
+    //         $booking->identification = $formData['identification'];
+    //         $booking->participants = intval($formData['participants']);
+    //         $booking->phone = $formData['phone'];
+    //         $booking->extra_message= $formData['extra_message'];
+    //         $booking->code = $formData['code'];
+    //         $booking->status  = $formData['status'];
+    //         $booking->time_booking = date("H:i", strtotime($formData['time_booking']));
+    //         $sandate = sanitize_text_field( esc_attr($formData['date_id']));
+    //         $sandate = DateTime::createFromFormat('d/m/y', $sandate);
+    //         $booking->date_id = strtotime($sandate->format('Y-m-d'));
 
 
-                var input = document.querySelector("#phone");
+    //         $table_name = $wpdb->prefix . 'ipf_bookings';
 
-                var iti = window.intlTelInput(input, {
+    //         $sql = $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $booking->id);
+    //         $results = $wpdb->get_results($sql);
 
-                    allowDropdown: true,
-                    initialCountry: "it",
-                    autoPlaceholder: "polite",
-                    separateDialCode: true,
-                    utilsScript: "https://raw.githack.com/jackocnr/intl-tel-input/master/build/js/utils.js"
-
-                });
-            </script>
-
-            ';
+    //         $participants_before = intval($results[0]->participants);
 
 
-            $response = array(
-                'succeded' => 1,
-                'htmlToPrint' => $html,
-                'date_id' => date('Y-m-d', $booking->date_id),
-            );
+    //         $table_name = $wpdb->prefix . 'ipf_days_date';
+    //         $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", intval($booking->date_id)));
 
-            $encoded_answer = json_encode($response);
-            header('Content-Type: application/json');
+    //         if ($row) {
 
-            echo $encoded_answer;
-            exit();
-        }
+    //             $bookings_now = $row->bookings;
 
+    //             $updated_participants = ($bookings_now - $participants_before) + $booking->participants;
 
-
-    }
-
-
-    public function tfIpf_return_booking_by_id($bookingid)
-    {
-        global $wpdb;
-
-        $query = $wpdb->prepare("
-            SELECT *
-            FROM {$wpdb->prefix}ipf_bookings
-            WHERE id = %d
-        ", $bookingid);
-
-        $booking = $wpdb->get_row($query);
-
-        if ($booking) {
-
-            return $booking;
-
-        } else {
-
-            return false;
-        }
-    }
-
-    public function ifpsave_edit_booking()
-    {
-        if (isset($_POST['formData'])) {
-
-            global $wpdb;
-
-            $formData = json_decode(stripslashes($_POST['formData']), true);
-
-            $booking = new stdClass();
-            $booking->id = intval($formData['bookingid']);
-            $booking->post_event_id = intval($formData['post_event_id']);
-            $booking->identification = $formData['identification'];
-            $booking->participants = intval($formData['participants']);
-            $booking->phone = $formData['phone'];
-            $booking->extra_message= $formData['extra_message'];
-            $booking->code = $formData['code'];
-            $booking->status  = $formData['status'];
-            $booking->time_booking = date("H:i", strtotime($formData['time_booking']));
-            $sandate = sanitize_text_field( esc_attr($formData['date_id']));
-            $sandate = DateTime::createFromFormat('d/m/y', $sandate);
-            $booking->date_id = strtotime($sandate->format('Y-m-d'));
+    //             $wpdb->update(
+    //                 $table_name,
+    //                 array('bookings' => $updated_participants),
+    //                 array('id' => $booking->date_id),
+    //                 array('%d'),
+    //                 array('%d')
+    //             );
+    //         }
 
 
-            $table_name = $wpdb->prefix . 'ipf_bookings';
+    //         $table_name = $wpdb->prefix . 'ipf_bookings';
 
-            $sql = $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $booking->id);
-            $results = $wpdb->get_results($sql);
-
-            $participants_before = intval($results[0]->participants);
-
-
-            $table_name = $wpdb->prefix . 'ipf_days_date';
-            $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", intval($booking->date_id)));
-
-            if ($row) {
-
-                $bookings_now = $row->bookings;
-
-                $updated_participants = ($bookings_now - $participants_before) + $booking->participants;
-
-                $wpdb->update(
-                    $table_name,
-                    array('bookings' => $updated_participants),
-                    array('id' => $booking->date_id),
-                    array('%d'),
-                    array('%d')
-                );
-            }
+    //         $result = $wpdb->update(
+    //             $table_name,
+    //             (array) $booking,
+    //             array('id' => $booking->id),
+    //             array(
+    //                 '%d',
+    //                 '%d',
+    //                 '%s',
+    //                 '%d',
+    //                 '%s',
+    //                 '%s',
+    //                 '%s',
+    //                 '%s',
+    //                 '%s',
+    //                 '%d'
+    //             ),
+    //         );
 
 
-            $table_name = $wpdb->prefix . 'ipf_bookings';
+    //         if ($result === false) {
 
-            $result = $wpdb->update(
-                $table_name,
-                (array) $booking,
-                array('id' => $booking->id),
-                array(
-                    '%d',
-                    '%d',
-                    '%s',
-                    '%d',
-                    '%s',
-                    '%s',
-                    '%s',
-                    '%s',
-                    '%s',
-                    '%d'
-                ),
-            );
+    //             $response = array(
+    //                 'success' => true,
+    //                 'htmlToPrint' => '<div class="alert alert-success" role="alert">Prenotazione aggiornata!</div>',
 
+    //             );
+    //             exit();
 
-            if ($result === false) {
+    //         } else {
 
-                $response = array(
-                    'success' => true,
-                    'htmlToPrint' => '<div class="alert alert-success" role="alert">Prenotazione aggiornata!</div>',
+    //             $response = array(
+    //                 'success' => true,
+    //                 'htmlToPrint' => '<div class="alert alert-success" role="alert">Prenotazione aggiornata!</div>',
+    //                 'newdate' => $booking->date_id
+    //             );
 
-                );
-                exit();
-
-            } else {
-
-                $response = array(
-                    'success' => true,
-                    'htmlToPrint' => '<div class="alert alert-success" role="alert">Prenotazione aggiornata!</div>',
-                    'newdate' => $booking->date_id
-                );
-
-                wp_send_json($response);
-                exit();
-            }
+    //             wp_send_json($response);
+    //             exit();
+    //         }
 
 
 
 
 
-        }
+    //     }
 
-        exit();
-    }
+    //     exit();
+    // }
 
 
 

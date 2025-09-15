@@ -4,13 +4,6 @@ require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
 class TFIP_Database {
 
-
-    function __construct()
-    {
-        //add_action( 'wp_ajax_tf_ipf_filter_events', array( $this, 'tfIpf_filter_events'));
-    }
-
-    //monitor this function
     public function TFIP_Database_Create_TimeSlots($timeslots_in)
     {
         global $wpdb;
@@ -98,10 +91,36 @@ class TFIP_Database {
 
     }
 
+    // public function TFIP_Database_Search_And_Return_TimeSlot_By_Time_And_( $timeslots, $active_day_id, $timebooking ) {
+
+    //     $dt = new DateTime();
+    //     $dt->setTimestamp( $active_day_id );
+    
+    //     foreach ( $timeslots as $ts_item ) {
+           
+    
+    //         list( $hours, $minutes ) = explode( ":", $ts_item->timeslotstart );
+    //         $dt->setTime( $hours, $minutes, 0 );
+    //         $ts_start = clone $dt;
+
+    //         list( $hours, $minutes ) = explode( ":", $ts_item->timeslotend );
+    //         $dt->setTime( $hours, $minutes, 59 ); 
+    //         $ts_end = clone $dt;
+    
+
+    //         $booking_dt = new DateTime( $timebooking );
+    
+    //         if ( $booking_dt >= $ts_start && $booking_dt <= $ts_end ) {
+    //             return $ts_item;
+    //         }
+    //     }
+    
+    //     return null; 
+    // }
     
     public function TFIP_Database_Get_Create_Format_Timeslots($day_timestamp)
     {
-        $timeslots = $this->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($day_timestamp);
+        $timeslots = $this->TFIP_Database_Get_All_Timeslots_For_Active_Day($day_timestamp);
         
         if(count($timeslots) == 0)
         {
@@ -161,7 +180,7 @@ class TFIP_Database {
             if ($wpdb->last_error == "") {
                 $return_res = [
                     'resolution' => 1,
-                    'id_date' => $id
+                    'id_date' => $id,
                 ];
             } else {
                 $return_res = [
@@ -194,14 +213,17 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_active_days';
 
-        $timeslots = $this->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($id_date);
+        $timeslots = $this->TFIP_Database_Get_All_Timeslots_For_Active_Day($id_date);
 
         $ret = null;
         
         if(count($timeslots) > 0)
         {
-            $unwrapped = array_column($timeslots, 'ts');
-            $newmax = array_sum(array_column($unwrapped, 'max_bookings'));
+        
+            $newmax = array_sum(array_map(function($slot) {
+                return (int) $slot->max_bookings;
+            }, $timeslots));
+            
 
             $result = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $id_date));
             wp_reset_query();
@@ -343,20 +365,16 @@ class TFIP_Database {
         return $result;
     }
 
-    public function TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($id_date) {
+    public function TFIP_Database_Get_All_Timeslots_For_Active_Day($id_date) {
         
         global $wpdb;
 
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
         $timeslots = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $id_date));
 
-        $normalized_timeslots = array_map(function($slot) {
-            return ['ts' => $slot];
-        }, $timeslots);
-
         wp_reset_query();
 
-        return $normalized_timeslots;
+        return $timeslots;
     }
 
     public function TFIP_Database_Get_Specific_Timeslot($id_slot) {
@@ -381,31 +399,6 @@ class TFIP_Database {
         return $day_instance->id_date;
     }
     
-
-
-    
-    public function PrintErrorMessage($message)
-    {
-        return '<div class="alert alert-danger text-center" role="alert">
-            <h4 class="alert-heading">We are sorry: '. $message .'</h4>
-        </div>';
-    }
-
-    public function tfIpf_get_date($id) {
-        
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ipf_days_date';
-
-        $query = $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id);
-        $result = $wpdb->get_row($query);
-
-        if ($result !== null) {
-            return $result;
-        } else {
-            return false;
-        }
-    }
 
     public function TFIP_Database_Update_Booking($booking_data) {
         
@@ -438,42 +431,6 @@ class TFIP_Database {
             return false;
         }
     }
-
-
-    public function tfIpf_update_days_date_bookings($id, $newBookings) {
-        
-        global $wpdb;
-
-        $table_name = $wpdb->prefix . 'ipf_days_date';
-    
-        $currentBookings = $wpdb->get_var($wpdb->prepare("SELECT bookings FROM $table_name WHERE id = %d", $id));
-        $maxParticipants = $wpdb->get_var($wpdb->prepare("SELECT max_participants FROM $table_name WHERE id = %d", $id));
-
-        $updatedBookings = $currentBookings + $newBookings;
-        
-        if ($updatedBookings > $maxParticipants) {
-            return false;
-        }
-        
-        $data = array(
-            'bookings' => $updatedBookings,
-        );
-    
-        $where = array(
-            'id' => $id,
-        );
-    
-        $result = $wpdb->update($table_name, $data, $where);
-    
-        //$rows_affected = $wpdb->rows_affected;
-        
-        if ($result !== false) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
 
     public function TFIP_Database_Get_Single_Timeslot_Max_Bookings($id_slot)
     {
@@ -700,52 +657,7 @@ class TFIP_Database {
 
     }
 
-   
-
-    public function tfIpf_filter_events()
-    {
-        if(isset($_POST['usersearch'])) {
-
-            $searchText = sanitize_text_field($_POST['usersearch']);
-            $searchText = strtolower($searchText);
-    
-            $query_tfIpf = new WP_Query(
-                array(
-                    's' => $searchText,
-                    'post_type' => 'tfipfevent',
-                    'post_status' => 'publish',
-                )
-            );
-            
-    
-            // Output the filtered events as options for select
-            if ($query_tfIpf->have_posts()) {
-                while ($query_tfIpf->have_posts()) {
-
-                    $query_tfIpf->the_post();
-                    $pid = get_the_ID();
-                    $date_event_timestamp = get_post_meta( $pid, '_tfIpf_event_date', true );
-
-                    if(!empty($date_event_timestamp))
-                    {
-                        $date_event = date('d/m/Y', $date_event_timestamp);
-                    }
-
-                    echo'<option value="' . $pid . '">' . get_the_title() . '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data Evento: ' . $date_event . '</span></option>';
-
-                }
-                wp_reset_postdata();
-            } else {
-                echo '<option>No events found</option>';
-            }
-
-            echo '<option value="-1"> Tavolo </span></option>';
-        }
-    
-        wp_die();
-    }
-
-    public function tfIpf_event_query_list($maxnum = -1)
+    public function TFIP_Database_Event_Query_List($maxnum = -1)
     {
     
         $timestamp_now = strtotime(date('Y-m-d'));
@@ -894,54 +806,21 @@ class TFIP_Database {
     }
 
 
-
-    // function ipf_save_edit_event($event)
+    // public function TFIP_Database_Get_Timeslot_Bookings($slot_id)
     // {
     //     global $wpdb;
-    //     $table_name = $wpdb->prefix . 'ipf_events';
 
-    //     $event_id = $event->event_id;
-
-    //     $result = $wpdb->update(
-    //         $table_name,
-    //         array(
-    //             'event_title' => $event->event_title,
-    //             'date_event' =>  $event->date_event,
-    //             'type_event' => $event->event_type,
-    //             'maxnum' => $event->eventPlaces,
-    //             'description_event' => $event->event_description,
-    //             'image_path' =>  $event->image_url,
-    //         ),
-    //         array('event_id' => $event_id), // Update based on event ID
-    //         array('%s', '%s', '%s', '%d', '%s', '%s'),
-    //         array('%d')
+    //     $bookings = $wpdb->get_results(
+    //         $wpdb->prepare(
+    //             "SELECT * FROM {$wpdb->prefix}tfip_bookings WHERE id_timeslot = %d",
+    //             (int)$slot_id
+    //         )
     //     );
 
-    //     if ($result === false) {
-    //         $error_message = $wpdb->last_error;
-    //         echo "Error updating data: $error_message";
-    //         return false;
-    //     } else {
-    //         return true;
-    //     }
+    //     wp_reset_query();
 
+    //     return $bookings;
     // }
-
-    public function TFIP_Database_Get_Timeslot_Bookings($slot_id)
-    {
-        global $wpdb;
-
-        $bookings = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM {$wpdb->prefix}tfip_bookings WHERE id_timeslot = %d",
-                (int)$slot_id
-            )
-        );
-
-        wp_reset_query();
-
-        return $bookings;
-    }
 
 
     public function TFIP_Database_Delete_Single_Timeslot($timeslot_id)
@@ -993,14 +872,14 @@ class TFIP_Database {
 
         if($active_day)
         {
-            $timeslots = $this->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($active_day->id_date);
+            $timeslots = $this->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day->id_date);
 
             if (count($timeslots) != 0) {
 
                
                 foreach ($timeslots as $single_timeslot) {
                     
-                    $ts = $single_timeslot['ts'];
+                    $ts = $single_timeslot;
 
                     $bookings = $wpdb->get_results(
                         $wpdb->prepare(
@@ -1118,7 +997,7 @@ class TFIP_Database {
        
     }
 
-    public function EditMaxCapacity($timestamp_day, $capacity)
+    public function TFIP_Database_Edit_Max_Capacity($timestamp_day, $capacity)
     {
         global $wpdb;
         $table_name = $wpdb->prefix . 'ipf_days_date';
@@ -1212,7 +1091,6 @@ class TFIP_Database {
 
         $table_active_days = $wpdb->prefix . 'tfip_active_days';
         $table_timeslot_instances = $wpdb->prefix . 'tfip_timeslot_instances';
-        $table_tfip_events = $wpdb->prefix . 'tfip_events';
         $table_bookings = $wpdb->prefix . 'tfip_bookings';
 
         $sql = [];
@@ -1238,17 +1116,6 @@ class TFIP_Database {
             FOREIGN KEY (id_date) REFERENCES $table_active_days(id_date) ON DELETE CASCADE
         ) $charset_collate;";
 
-        // Table 3: tfip_events   ---> remove this table
-        $sql[] = "CREATE TABLE $table_tfip_events (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            id_timeslot BIGINT UNSIGNED NOT NULL,
-            idpostevent BIGINT UNSIGNED NOT NULL,
-            bypass_timeslot INT NOT NULL DEFAULT 0,
-            max_bookings_event INT DEFAULT NULL,
-            active TINYINT(1) NOT NULL DEFAULT 1,
-            PRIMARY KEY (id),
-            FOREIGN KEY (id_timeslot) REFERENCES $table_timeslot_instances(id) ON DELETE CASCADE
-        ) $charset_collate;";
 
         // Table 4: bookings
         $sql[] = "CREATE TABLE $table_bookings (
@@ -1273,7 +1140,7 @@ class TFIP_Database {
           
     }
 
-    public function TFIP_Query_Events_All_Or_For_Date($id_date = null, $timestamp_start_timeslot = null, $maxnum = -1)
+    public function TFIP_Query_All_Events_For_Date($id_date = null, $timestamp_start_timeslot = null, $maxnum = -1)
     {
     
         $timestamp_date = strtotime(date('d-m-Y'));
@@ -1348,7 +1215,7 @@ class TFIP_Database {
     {
         $obj = null;
         $calendar_data = $this->TFIP_Database_query_date($timestamp);
-        $events = $this->TFIP_Query_Events_All_Or_For_Date($timestamp);
+        $events = $this->TFIP_Query_All_Events_For_Date($timestamp);
         
         $fmt = new IntlDateFormatter(
             'it_IT',                 

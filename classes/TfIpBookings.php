@@ -18,35 +18,20 @@ class TfIpBooking {
 
         $this->_manager = $manager;
 
-        // add_action( 'wp_ajax_tfip_getBookingData', array( $this, 'tfip_getBookingData'));
-        // add_action( 'wp_ajax_nopriv_tfip_getBookingData', array( $this, 'tfip_getBookingData'));
-        add_action( 'wp_ajax_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
-        add_action( 'wp_ajax_nopriv_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
-        // add_action( 'wp_ajax_tf_ipf_confirm_booking', array( $this, 'tfIpf_final_booking_confirm'));
-        // add_action( 'wp_ajax_nopriv_tf_ipf_confirm_booking', array( $this, 'tfIpf_final_booking_confirm'));
-
-
-        add_action( 'wp_ajax_tfip_get_single_booking', array( $this, 'TFIP_Booking_Get_Single_Booking'));
-
-        
-        add_action( 'wp_ajax_tfip_admin_create_booking', array( $this, 'tfip_admin_create_booking'));
-        add_action( 'wp_ajax_tfip_admin_update_booking', array( $this, 'TFIP_Booking_Update_Booking'));
-
-        add_action( 'wp_ajax_tfip_admin_delete_booking', array( $this, 'TFIP_Booking_Delete_Booking'));
-
         add_action('init', [$this,'booking_rewrite_rule']);
-
-        add_action( 'wp_ajax_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
-        add_action( 'wp_ajax_nopriv_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
-
-        add_action( 'wp_ajax_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
-        add_action( 'wp_ajax_nopriv_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
-
         add_filter('query_vars', [$this, 'add_custom_query_var']);
         add_filter('template_include', [$this, 'load_custom_plugin_template']);
 
-        
-
+        add_action( 'wp_ajax_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
+        add_action( 'wp_ajax_nopriv_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
+        add_action( 'wp_ajax_tfip_get_single_booking', array( $this, 'TFIP_Booking_Get_Single_Booking'));
+        add_action( 'wp_ajax_tfip_admin_create_booking', array( $this, 'tfip_admin_create_booking'));
+        add_action( 'wp_ajax_tfip_admin_update_booking', array( $this, 'TFIP_Booking_Update_Booking'));
+        add_action( 'wp_ajax_tfip_admin_delete_booking', array( $this, 'TFIP_Booking_Delete_Booking'));
+        add_action( 'wp_ajax_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
+        add_action( 'wp_ajax_nopriv_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
+        add_action( 'wp_ajax_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
+        add_action( 'wp_ajax_nopriv_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
 
     }
 
@@ -72,8 +57,6 @@ class TfIpBooking {
     }
 
 
-
-    //display booking to customer
     function booking_rewrite_rule() {
         add_rewrite_rule(
             '^booking/([^/]*)/?',
@@ -86,7 +69,6 @@ class TfIpBooking {
         $vars[] = 'booking_code';
         return $vars;
     }
-    
     
     function load_custom_plugin_template($template) {
         $booking_code = get_query_var('booking_code');
@@ -111,6 +93,9 @@ class TfIpBooking {
         if(!$booking_id || $booking_id == 0)
         {
             $obj = [
+                'dayStr' => null,
+                'dayId' => null,
+                'timeslotid'=>null,
                 'resolution' => 0,
                 'message' => 'You really should not be here. you are cheating with if($timeslot)the url parameters',
                 'booking' => null,
@@ -127,14 +112,17 @@ class TfIpBooking {
             if($single_booking)
             {
                 $timeslot = $this->_ipfDatabase->TFIP_Database_Get_Specific_Timeslot($single_booking->id_timeslot);
-                $day_timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($timeslot->id_date);
-                $targetTime = $single_booking->booking_time;//(new DateTime($single_booking->booking_time))->format('H:i');
+                $day_timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($timeslot->id_date);
+                
+                $targetTime = $single_booking->booking_time;
+
                 $slots = [];
 
                 if($timeslot)
                 {
                     $slots = TFIP_Utils::TFIP_Utiles_Format_Existing_Timeslots($day_timeslots, $timeslot->id_date, $single_booking->id_timeslot, $targetTime);
                     
+                   // $single_booking->exacttimes = TFIP_Utils::TFIP_Utils_Search_Return_Exact_Times($timeslot->timeslotstart, $timeslot->timeslotend, $single_booking->booking_time);
 
                     //fix here
                     $event_instance = null; 
@@ -147,6 +135,9 @@ class TfIpBooking {
 
 
                     $obj = [
+                        'dayStr' => date("d-m-Y", $timeslot->id_date),
+                        'dayId' => $timeslot->id_date,
+                        'timeslotid'=>$timeslot->id,
                         'resolution' => 1,
                         'message' => 'OK',
                         'booking' => $single_booking,
@@ -159,6 +150,9 @@ class TfIpBooking {
                 }else
                 {
                     $obj = [
+                        'dayStr' => null,
+                        'dayId' => null,
+                        'timeslotid'=>null,
                         'resolution' => 0,
                         'message' => 'You really should not be here. Timeslot instance cannot be found',
                         'booking' => null,
@@ -275,7 +269,7 @@ class TfIpBooking {
             'id_new_timeslot'  => isset($_POST['id_new_timeslot']) &&  $_POST['id_new_timeslot'] != "" ? intval($_POST['id_new_timeslot']) : null,
             'id_booking'       => intval($_POST['id_booking']),
             'post_event_id'    => intval($_POST['postevent_id']),
-            'time_booking'     => (new DateTime(sanitize_text_field($_POST['time_booking'])))->format('H:i'),
+            'time_booking'     => (new DateTime(sanitize_text_field($_POST['exact_time_booking'])))->format('H:i'),
             'identification'   => sanitize_text_field($_POST['identification']),
             'phone'            => sanitize_text_field($_POST['phone']),
             'participants'     => intval($_POST['participants']),
@@ -423,7 +417,7 @@ class TfIpBooking {
             $new_active_day = $this->TFIP_Booking_Get_Create_Active_Day($new_active_day_id);
         }
         
-        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($new_active_day_id);
+        $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($new_active_day_id);
 
         if(count($timeslots) == 0)
         {
@@ -476,7 +470,7 @@ class TfIpBooking {
 
         foreach ($timeslots as $arrI) {
             
-            $local_slot = $arrI['ts'];
+            $local_slot = $arrI;
             
             $temp_day_total_max += (int)$local_slot->max_bookings;
             $day_local_active += (int)$local_slot->active_bookings;     
@@ -627,7 +621,7 @@ class TfIpBooking {
 
         $res = $this->TFIP_Booking_Create_Client_Booking(
             $slot_id, $booking->identification, $booking->participants,
-            $booking->phone, $booking->extra_message, $booking->code, $booking->status, $booking->time_booking, $post_id);
+            $booking->phone, $booking->extra_message, $booking->code, $booking->status, $booking->exact_booking_time, $post_id);
         
         if($res['resolution'] == 1)
         {   
@@ -712,7 +706,7 @@ class TfIpBooking {
             $active_day = $date_res['id_date'];
         } 
 
-        $timeslots_res = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($active_day_id);
+        $timeslots_res = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day_id);
         
         if($timeslots_res == null)
         {
@@ -729,7 +723,7 @@ class TfIpBooking {
 
         if($active_day->active)
         {
-            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Peculiar_Timeslots_For_The_Day($active_day_id);
+            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day_id);
             $temp_day_total_max = 0;
             $temp_total_active = 0;
 
@@ -741,7 +735,7 @@ class TfIpBooking {
             
             if (count($timeslots) == 1) {
                 
-                $ts_item = $timeslots[0]['ts']; 
+                $ts_item = $timeslots[0]; 
             
                 $temp_day_total_max += $ts_item->max_bookings;
                 $temp_total_active  += $ts_item->active_bookings;
@@ -749,19 +743,11 @@ class TfIpBooking {
                 $booking_timeslot = $ts_item;
             
             } else {
-                foreach ($timeslots as $ts) {
-                    $ts_item = $ts['ts']; 
-            
-                    $dt = new DateTime();
-                    $dt->setTimestamp($active_day_id);
-                    list($hours, $minutes) = explode(":", $ts_item->timeslotstart);
-                    $dt->setTime($hours, $minutes, 0); 
-                    $ts_start_date = $dt->format('Y-m-d H:i:s.u');
-            
-                    if ($ts_start_date == $timebooking) {
-                        $booking_timeslot = $ts_item;
-                    }
-            
+
+                $booking_timeslot = TFIP_Utils::TFIP_Utils_Return_Timeslot_For_Selected_Time($timeslots, $active_day_id, $timebooking);
+                
+                foreach ($timeslots as $ts_item) {
+
                     $temp_day_total_max += $ts_item->max_bookings;
                     $temp_total_active  += $ts_item->active_bookings;
                 }
@@ -853,16 +839,11 @@ class TfIpBooking {
         $booking_date = new DateTime($booking_date_raw . ' 00:00:00');
 
         $id_date = $booking_date->getTimestamp();
-        $booking->time_booking =  sanitize_text_field($formData['time_booking']);
+        $reference_timeslot_time =  sanitize_text_field($formData['time_booking']);
 
-        $dt = new DateTime();
-        $dt->setTimestamp($id_date);
-        list($hours, $minutes) = explode(":", $booking->time_booking);
-        $dt->setTime($hours, $minutes, 0); 
-        $booking->time_booking = $dt->format('Y-m-d H:i:s.u');
+        $booking->reference_timeslot_time = TFIP_Utils::TFIP_Utils_Format_DateTime($id_date, $reference_timeslot_time);
+        $booking->exact_booking_time = sanitize_text_field($formData['exact_time_booking']);
 
-
-        
         $booking->participants = intval($formData['participants']);
         $booking->identification = sanitize_text_field(esc_attr($formData['identification']));
         $booking->phone = sanitize_text_field($formData['phone']);
@@ -870,8 +851,8 @@ class TfIpBooking {
         $booking->status = sanitize_text_field($formData['status'] == 'confirmed') ? 1 : 0;
         $booking->code = $this->_ipfDatabase->TFIP_Database_generate_code($booking->identification);
 
-        // Validate booking availability
-        $validation = $this->TFIP_Booking_Verify_Availability_Prepare_Booking($id_date, $booking->participants, $booking->time_booking, $booking->status);
+
+        $validation = $this->TFIP_Booking_Verify_Availability_Prepare_Booking($id_date, $booking->participants, $booking->reference_timeslot_time, $booking->status);
 
         if(intval($validation['resolution']) == 1)
         {

@@ -1,0 +1,4 @@
+<% _.each(etimes, function(item) { %>
+  <% var et = item.et; %>
+  <option value="<%= et.id %>" <%= et.sel === 1 ? 'selected="selected"' : '' %> ><%= et.id %></option>
+<% }); %>
