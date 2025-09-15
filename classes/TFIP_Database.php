@@ -671,14 +671,14 @@ class TFIP_Database {
                 'posts_per_page' => $maxnum,
                 'meta_query'     => array(
                     array(
-                        'key'     => '_tfIpf_event_date',
+                        'key'     => '_TFIP_event_date',
                         'value'   => $timestamp_now,
                         'type'    => 'NUMERIC',
                         'compare' => '>=',
                     )
                 ),
                 'orderby'        => 'meta_value_num',
-                'meta_key'       => '_tfIpf_event_date',
+                'meta_key'       => '_TFIP_event_date',
                 'order'          => 'ASC'
             )
         );
@@ -693,17 +693,17 @@ class TFIP_Database {
             
             $the_single_ipf->event_description = get_post_meta( $the_single_ipf->id, '_tfIpf_event_description', true );
             
-            $timeslot_id = get_post_meta( $the_single_ipf->id, '_tfIpf_event_timeslot', true );
+            $timeslot_id = get_post_meta( $the_single_ipf->id, '_TFIP_event_timeslot', true );
             $timeslot = $this->TFIP_Database_Get_Specific_Timeslot($timeslot_id);
 
             $the_single_ipf->time_event = $timeslot->timeslotstart . " - " . $timeslot->timeslotend;
 
-            $the_single_ipf->date_event = date('Y-m-d',  get_post_meta( $the_single_ipf->id, '_tfIpf_event_date', true ));
+            $the_single_ipf->date_event = date('Y-m-d',  get_post_meta( $the_single_ipf->id, '_TFIP_event_date', true ));
 
-            $the_single_ipf->event_type = get_post_meta($the_single_ipf->id, '_tfIpf_event_type', true);
+            $the_single_ipf->event_type = get_post_meta($the_single_ipf->id, '_TFIP_event_type', true);
             $the_single_ipf->image_p = get_post_meta( $the_single_ipf->id, '_tfIpf_event_image', true );
-            $the_single_ipf->teamone = get_post_meta($the_single_ipf->id, '_tfIpf_event_team_one', true);
-            $the_single_ipf->teamtwo = get_post_meta($the_single_ipf->id, '_tfIpf_event_team_two', true);
+            $the_single_ipf->teamone = get_post_meta($the_single_ipf->id, '_TFIP_event_TeamOne', true);
+            $the_single_ipf->teamtwo = get_post_meta($the_single_ipf->id, '_TFIP_event_TeamTwo', true);
             $the_single_ipf->max_participants = get_post_meta($the_single_ipf->id, 'squadre', true);
 
             $the_single_ipf->available = "to be calculated";
@@ -1165,14 +1165,14 @@ class TFIP_Database {
                 'posts_per_page' => $maxnum,
                 'meta_query'     => array(
                     array(
-                        'key'     => '_tfIpf_event_date',
+                        'key'     => '_TFIP_event_date',
                         'value'   => $timestamp_date,
                         'type'    => 'NUMERIC',
                         'compare' => '=',
                     )
                 ),
                 'orderby'        => 'meta_value_num',
-                'meta_key'       => '_tfIpf_event_date',
+                'meta_key'       => '_TFIP_event_date',
                 'order'          => 'ASC'
             )
         );
@@ -1188,16 +1188,16 @@ class TFIP_Database {
             $the_single_ipf->event_description = get_post_meta( $the_single_ipf->id, '_tfIpf_event_description', true );
             
 
-            $timeslot_id = get_post_meta( $the_single_ipf->id, '_tfIpf_event_timeslot', true );
+            $timeslot_id = get_post_meta( $the_single_ipf->id, '_TFIP_event_timeslot', true );
             $timeslot = $this->TFIP_Database_Get_Specific_Timeslot($timeslot_id);
 
             $the_single_ipf->time_event = $timeslot->timeslotstart . " - " . $timeslot->timeslotend;
-            $the_single_ipf->date_event = date('Y-m-d',  get_post_meta( $the_single_ipf->id, '_tfIpf_event_date', true ));
+            $the_single_ipf->date_event = date('Y-m-d',  get_post_meta( $the_single_ipf->id, '_TFIP_event_date', true ));
 
-            $the_single_ipf->event_type = get_post_meta($the_single_ipf->id, '_tfIpf_event_type', true);
+            $the_single_ipf->event_type = get_post_meta($the_single_ipf->id, '_TFIP_event_type', true);
             $the_single_ipf->image_p = get_post_meta( $the_single_ipf->id, '_tfIpf_event_image', true );
-            $the_single_ipf->teamone = get_post_meta($the_single_ipf->id, '_tfIpf_event_team_one', true);
-            $the_single_ipf->teamtwo = get_post_meta($the_single_ipf->id, '_tfIpf_event_team_two', true);
+            $the_single_ipf->teamone = get_post_meta($the_single_ipf->id, '_TFIP_event_TeamOne', true);
+            $the_single_ipf->teamtwo = get_post_meta($the_single_ipf->id, '_TFIP_event_TeamTwo', true);
             $the_single_ipf->max_participants = get_post_meta($the_single_ipf->id, 'squadre', true);
 
             $the_single_ipf->available = "to be calculated";

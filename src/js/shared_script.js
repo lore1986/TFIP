@@ -7,41 +7,49 @@ function convert_date_to_string(times_date) {
     return dateStr
 }
 
-function AttachUpdateTimeslotEvent(selectTagId)
+function AttachUpdateTimeslotEvent(selectTagId, selfRefObject, resetTimeDivIn)
 {
     const dateInput = document.getElementById(selectTagId);
-
+    
     dateInput.addEventListener('change', function (event) {
-        console.log(event.target.value);
         const selectedDate = event.target.value;
-        updateTimeslots(selectedDate, 'time_booking');
+        const resetTimeDiv = document.getElementById(resetTimeDivIn);
+        resetTimeDiv.innerHTML = '<option value="0">Change to update time values</option>';
+        updateTimeslots(selectedDate, selfRefObject);
     });
 }
 
 
 function AttachExactTimeEvent(selectETimeTagId, divName)
 {
-    select = document.getElementById(selectETimeTagId);
+    const select = document.getElementById(selectETimeTagId);
 
     select.addEventListener('change', function() {
 
         const selectedOption = this.options[this.selectedIndex];
-        const idStart = selectedOption.getAttribute('data-idstart');
-        const idEnd = selectedOption.getAttribute('data-idend');
-        
-        updateExactBookingTime(idStart, idEnd, divName);
+
+        if(selectedOption != 0)
+        {
+            const idStart = selectedOption.getAttribute('data-idstart');
+            const idEnd = selectedOption.getAttribute('data-idend');
+            
+            updateExactBookingTime(idStart, idEnd, divName);
+        }else
+        {
+
+        }
     });
 }
 
 
-function LoadExactTimesTemplate(exacttimes) {
+function LoadExactTimesTemplate(exacttimes, divname) {
     const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/exact-time-instances.html';
 
     jQuery.get(templateUrl, function (templateHtml) {
 
         const timeslotTemplate = _.template(templateHtml);
         const renderedTimeslots = timeslotTemplate({ etimes: exacttimes });
-        const timeslotSelect = document.getElementById('exact_time_booking');
+        const timeslotSelect = document.getElementById(divname);
         timeslotSelect.innerHTML = renderedTimeslots;
     });
 }

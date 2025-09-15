@@ -473,7 +473,7 @@ function load_form_admin_booking(location, origin, data) {
                             {
                                 updateTimeslots(dayStr, 'time_booking').then(
                                     (response) => {
-                                        AttachUpdateTimeslotEvent('admin_date_id');
+                                        AttachUpdateTimeslotEvent('admin_date_id', 'time_booking', 'exact_time_booking');
                                         AttachExactTimeEvent('time_booking', 'exact_time_booking');
                                     }
                                 )
@@ -501,10 +501,10 @@ function load_form_admin_booking(location, origin, data) {
 
                                         if(selectedTimeslot != null)
                                         {
-                                            LoadExactTimesTemplate(selectedTimeslot.exact_time);
+                                            LoadExactTimesTemplate(selectedTimeslot.exact_time, 'exact_time_booking');
                                         }
 
-                                        AttachUpdateTimeslotEvent('admin_date_id');
+                                        AttachUpdateTimeslotEvent('admin_date_id', 'time_booking', 'exact_time_booking');
                                         AttachExactTimeEvent('time_booking', 'exact_time_booking');
                                     }
                                 )
@@ -526,13 +526,13 @@ function load_form_admin_booking(location, origin, data) {
                                                 
                                                 if(element.id == data.booking.id_timeslot)
                                                 {
-                                                    LoadExactTimesTemplate(element.exact_time);
+                                                    LoadExactTimesTemplate(element.exact_time, 'exact_time_booking');
                                                     break;
                                                 }
                                             }
 
                                             FillBookingFormData(data.booking)
-                                            AttachUpdateTimeslotEvent('admin_date_id');
+                                            AttachUpdateTimeslotEvent('admin_date_id', 'time_booking', 'exact_time_booking');
                                             AttachExactTimeEvent('time_booking', 'exact_time_booking');
 
                                         }

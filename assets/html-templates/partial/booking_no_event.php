@@ -39,17 +39,8 @@
     
 
     document.addEventListener('DOMContentLoaded', function () {
-        
-        flatpickr(date_str, {
-            dateFormat: "d-m-Y",
-            minDate: "today",
-            defaultDate: "<?= esc_html( $objdata->date_str ) ?>"
-        });
 
         Load_Timeslots(<?= wp_json_encode( $objdata->timeslots ) ?>, 'client_timeslot');
-
-        AttachUpdateTimeslotEvent('datestamp');
-        AttachExactTimeEvent('client_timeslot', 'exact_client_time');
     });
 
 
@@ -60,9 +51,12 @@
         var timeslot = document.getElementById('client_timeslot').value;
         var exactTime = document.getElementById('exact_client_time').value;
         var datestamp = document.getElementById('datestamp').value;
+        const alertb = document.getElementById('alert-booking');
 
 
-        jQuery.ajax({
+        if(date != '' && timeslot != 0 && exactTime != 0)
+        {
+            jQuery.ajax({
             url: TFIP_Ajax_Obj.ajaxUrl,
             method: 'POST',
             data: {
@@ -73,8 +67,6 @@
                 tstime: timeslot
             },
             success: function(response) {
-                
-                const alertb = document.getElementById('alert-booking');
 
                 if(response.resolution == 1)
                 {
@@ -87,15 +79,16 @@
                     alertb.innerText = response.message;
                     alertb.hidden = false;
                 }
-                
-
-                
+                            
             },
             error: function(xhr, status, error) {
                 console.error('AJAX error:', error);
             }
-        })
-
+        })}else
+        {
+            alertb.innerText = "Please choose date, a timeslot and time";
+            alertb.hidden = false;
+        }
         
     }
 </script>

@@ -4,7 +4,7 @@
                         <form id="regForm" class="form-prenota-evento" action="#prenota-online" method="POST" >
                             <div class="tab form-row">
                                 
-                                <input id="timeslotid" name="timeslotid" style="display:none;" value="<?php echo get_post_meta($post_id, '_tfIpf_event_timeslot', true);?>" />
+                                <input id="timeslotid" name="timeslotid" style="display:none;" value="<?php echo get_post_meta($post_id, '_TFIP_event_timeslot', true);?>" />
                                 <input id="eventid" name="eventid" style="display:none;" value="<?php echo $post_id ?>" />
                                 
                                 <div class="form-group col-12">
