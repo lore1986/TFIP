@@ -34,9 +34,6 @@ function AttachExactTimeEvent(selectETimeTagId, divName)
             const idEnd = selectedOption.getAttribute('data-idend');
             
             updateExactBookingTime(idStart, idEnd, divName);
-        }else
-        {
-
         }
     });
 }

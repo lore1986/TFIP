@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Plugin Name: The Florence Irish Pub
- * Description: The Florence Irish Pub Firenze Booking
+ * Plugin Name: TFIP
+ * Description: TFIP Booking
  * Version: 1.0
  * Author: Tripleg
  */
@@ -100,7 +100,7 @@ function TFIP_shared_script() {
     wp_enqueue_script('flatpickr-js', 'https://cdn.jsdelivr.net/npm/flatpickr', array(), null, true);
     wp_enqueue_script('undescore', includes_url('js') . '/underscore.min.js' );
 
-    wp_enqueue_script('TFIP_Shared_Script_Js',  plugin_dir_url(__FILE__) . 'src/js/shared_script.js',array('jquery', 'underscore'), null, true );
+    wp_enqueue_script('TFIP_Shared_Script_Js',  plugin_dir_url(__FILE__) . 'assets/js/shared_script.js',array('jquery', 'underscore'), null, true );
     
     wp_localize_script('TFIP_Shared_Script_Js', 'TFIP_Ajax_Obj', array(
         'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -118,14 +118,14 @@ function TFIP_admin_enqueue_scripts($hook) {
     TFIP_shared_script();
 
     wp_enqueue_style('tfip_admin_css', plugin_dir_url(__FILE__) . 'assets/css/TFIP-admin.css');
-    wp_enqueue_script('tfipf-admin-script', plugin_dir_url(__FILE__) . 'src/js/tfipf-admin.js', [], null, true);
+    wp_enqueue_script('tfipf-admin-script', plugin_dir_url(__FILE__) . 'assets/js/tfipf-admin.js', [], null, true);
     wp_add_inline_script('tfipf-admin-script', 'ajaxurl', admin_url('admin-ajax.php'));
 
     if (($hook === 'post-new.php' || $hook === 'post.php') && $post_type === 'tfipfevent') {
 
         wp_enqueue_script(
             'TfIpAdmin_js',
-            plugin_dir_url(__FILE__) . 'src/js/tfip_admin_js.js',
+            plugin_dir_url(__FILE__) . 'assets/js/tfip_admin_js.js',
             [],
             null,
             true 
@@ -147,7 +147,7 @@ function TFIP_user_enqueue_scripts() {
 
     wp_enqueue_style('tfipf-bootstrap', plugin_dir_url(__FILE__) . 'assets/css/TFIP-boostrap.css');
 
-    wp_enqueue_script('TfIpBooking_event_js',  plugin_dir_url(__FILE__) . 'src/js/event_booking.js',array('jquery', 'intlTelInput'), null, true );
+    wp_enqueue_script('TfIpBooking_event_js',  plugin_dir_url(__FILE__) . 'assets/js/event_booking.js',array('jquery', 'intlTelInput'), null, true );
     wp_localize_script('TfIpBooking_event_js', 'TFIP_Ajax_Obj', array(
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'templatesUrl' => plugin_dir_url(__FILE__)  . 'assets/html-templates/',
@@ -155,7 +155,7 @@ function TFIP_user_enqueue_scripts() {
         'tifpBootstrap' => 'tfipf-bootstrap'
     ));
 
-    wp_enqueue_script('TfIpCalendar_js',  plugin_dir_url(__FILE__) . 'src/js/calendar_js.js', array('jquery', 'undescore', 'intlTelInput'), null, false );
+    wp_enqueue_script('TfIpCalendar_js',  plugin_dir_url(__FILE__) . 'assets/js/calendar_js.js', array('jquery', 'undescore', 'intlTelInput'), null, false );
     
     wp_localize_script('TfIpCalendar_js', 'TFIP_Ajax_Obj', array(
         'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -218,7 +218,7 @@ function TFIP_Pub_No_Event_Booking_Shortcode_Action()
     if ($template) {
         include $template;
     } else {
-        echo '<p>Template not found.</p>';
+        return '<p>Template not found.</p>';
     }
 
     return ob_get_clean();

@@ -170,8 +170,8 @@ class TfIpCalendar {
                 }
             }else
             {
-                $new_day = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($dateid);
-                $timeslots = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($dateid);
+                $_ = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($dateid);
+                $_ = $this->_ipfDatabase->TFIP_Booking_Create_And_Return_Default_Timeslots($dateid);
 
 
                 $resp_obj = [
@@ -741,50 +741,48 @@ class TfIpCalendar {
         {
             $maxnum = sanitize_text_field($_POST['maxnum']);
             $calendar_events = $this->_ipfDatabase->TFIP_Database_Event_Query_List(intval($maxnum));
-            $html = $this->tfIpf_render_events_list($calendar_events);
+            $html = $this->TFIP_Calendar_Render_Event_List($calendar_events);
             echo $html;
             exit();
         }
 
     }
 
-
-
-    function tfIpf_render_events_list($arra_event)
+    function TFIP_Calendar_Render_Event_List($arra_event)
     {
-        $html = '';
+        $html = '<div class="TFIP-style">';
 
         foreach($arra_event as $ev)
         {
-            $ev_date = date('Y-m-d', strtotime($ev->date_event));
-            $ev_link = $permalink = get_permalink($ev->id);
-
+            $ev_date = $ev->date_event;
+            $ev_link = get_permalink($ev->id);
+            $extended_date = DateTime::createFromFormat("d-m-Y", $ev_date)->format("d M Y");
             $featured_image_url = get_the_post_thumbnail_url($ev->id, 'thumbnail');
 
 
             switch ($ev->event_type) {
                 case 'sport':
                     {
-                        $path_check = plugin_dir_path( __DIR__) . 'squadre/';
-                        $path = plugin_dir_url( __DIR__) . 'squadre/';
+                        
+                        $path_url = plugin_dir_url(__DIR__) . 'assets/squadre/';
+                        $path_file = plugin_dir_path(__DIR__) . 'assets/squadre/';
 
-                        $team_one_img = $path_check . $ev->teamone . '.png';
-                        $team_two_img = $path_check . $ev->teamtwo . '.png';
+                        $team_one_filename = TFIP_Utils::TFIP_Utils_Normalize_Team_Name($ev->teamone);
+                        $team_two_filename = TFIP_Utils::TFIP_Utils_Normalize_Team_Name($ev->teamtwo);
 
-                        if (!file_exists($team_one_img)) 
-                        {
-                            $team_one_img = $path . 'Neutral.png';
-                        }else
-                        {
-                            $team_one_img = $path . $ev->teamone . '.png';
+                        $team_one_img = $path_url . $team_one_filename;
+                        $team_two_img = $path_url . $team_two_filename;
+
+                        $team_one_img_file = $path_file . $team_one_filename;
+                        $team_two_img_file = $path_file . $team_two_filename;
+
+ 
+                        if (!file_exists($team_one_img_file)) {
+                            $team_one_img = $path_url . 'Neutral.png';
                         }
 
-                        if(!file_exists($team_two_img))
-                        {
-                            $team_two_img = $path . 'Neutral.png';
-                        }else
-                        {
-                            $team_two_img = $path . $ev->teamtwo . '.png';
+                        if (!file_exists($team_two_img_file)) {
+                            $team_two_img = $path_url . 'Neutral.png';
                         }
 
 
@@ -819,7 +817,7 @@ class TfIpCalendar {
 
             $html .= '<p>
                                 <span class="data-evento">
-                                <b>'. date('d M Y', strtotime($ev_date)) .'</b>
+                                <b>'. $extended_date .'</b>
                                 </span>, <span class="orario-evento">'. $ev->time_event .' </span>
 
                                 <button type="button" onclick="location.href=\'' . $ev_link . '\'" class="btn btn-outline prenota">Prenota</button>
@@ -827,6 +825,8 @@ class TfIpCalendar {
                     </div>';
 
         }
+
+        $html .= '</div>';
 
         return $html;
     }

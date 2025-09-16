@@ -30,8 +30,8 @@ class TfIpEvent
         $labels = [
             'name' => _x('Eventi', 'plural'),
             'singular_name' => _x('Evento', 'singular'),
-            'menu_name' => _x('The Florence Eventi', 'admin menu'),
-            'name_admin_bar' => _x('The Florence Eventi', 'admin bar'),
+            'menu_name' => _x('TFIP Events', 'admin menu'),
+            'name_admin_bar' => _x('TFIP Events', 'admin bar'),
             'add_new' => _x('Aggiungi Evento', 'add new'),
             'add_new_item' => __('Aggiungi Evento'),
             'new_item' => __('Nuovo Evento'),
@@ -131,6 +131,7 @@ class TfIpEvent
      */
 
     function save_tfIpf_meta_event_box_data($post_id, $post, $update) {
+        
         if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) return;
         if ( wp_is_post_autosave($post_id) || wp_is_post_revision($post_id) ) return;
 
@@ -158,6 +159,30 @@ class TfIpEvent
         
 
         if ( !empty($event_date) && !empty($event_time) && !empty($exact_event_time) ) {
+
+            $date_format = DateTime::createFromFormat('d-m-Y', $event_date)->setTime(0,0,0);
+            $timestamp = $date_format->getTimestamp();
+
+
+            $activeDay = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($timestamp);
+
+            if(!$activeDay)
+            {
+                $activeDay = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($timestamp);
+            }
+
+            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($activeDay->id_date);
+
+            if(count($timeslots) == 0)
+            {
+                $timeslots = $this->_ipfDatabase->TFIP_Database_Get_Create_Format_Timeslots($activeDay->id_date);
+            }
+
+            $timebooking_normalized = TFIP_Utils::TFIP_Utils_Format_DateTime($activeDay->id_date,  $event_time);
+            $timeslotid = TFIP_Utils::TFIP_Utils_Return_Timeslot_For_Selected_Time($timeslots, $activeDay->id_date, $timebooking_normalized)->id;
+
+            update_post_meta($post_id, '_TFIP_event_timeslot', $timeslotid);
+            update_post_meta($post_id, '_TFIP_event_timestamp', $timestamp);
             update_post_meta($post_id, '_TFIP_event_date', $event_date);
             update_post_meta($post_id, '_TFIP_event_time', $event_time);
             update_post_meta($post_id, '_TFIP_exact_event_time', $exact_event_time);
@@ -175,42 +200,46 @@ class TfIpEvent
         $event_time       = esc_attr(get_post_meta($post->ID, '_TFIP_exact_event_time', true));
         ?>
 
-        <div class="form-group">
-            <input type="text" hidden id="get_event_time" value="<?php echo $exact_event_time; ?>" >
-            <input type="text" hidden id="get_exact_event_time" value="<?php echo $event_time; ?>">
-        </div>
+        <div class="TFIP-style">
+            <div class="form-group" >
+                <input type="text" hidden id="get_event_time" value="<?php echo $exact_event_time; ?>" >
+                <input type="text" hidden id="get_exact_event_time" value="<?php echo $event_time; ?>">
+            </div>
 
-        <div class="form-group mb-3">
-            <label for="event_date"><?php _e('Data Evento:', 'textdomain'); ?></label>
-            <input type="text" class="form-control" id="event_date" name="event_date"  
-                   value="<?php echo $date_event; ?>" autocomplete="off">
-        </div>
-    
-        <div class="form-group mb-3">
-            <label for="event_time"><?php _e('Orario Evento:', 'textdomain'); ?></label>
-            <select id="event_time" name="event_time" class="form-control"></select>
-        </div>
-
-        <div class="form-group mb-3">
-            <label for="exact_event_time"><?php _e('Orario Esatto:', 'textdomain'); ?></label>
-            <select id="exact_event_time" name="exact_event_time"></select>
-        </div>
-    
-        <div class="form-group mb-3">
-            <label for="type_event"><?php _e('Tipo Evento:', 'textdomain'); ?></label>
-            <select id="type_event" name="type_event" class="form-control">
-                <option value="sport" <?php selected($event_type, 'sport'); ?>><?php _e('Sport', 'textdomain'); ?></option>
-                <option value="music" <?php selected($event_type, 'music'); ?>><?php _e('Music', 'textdomain'); ?></option>
-                <option value="food"  <?php selected($event_type, 'food'); ?>><?php _e('Food', 'textdomain'); ?></option>
-            </select>
-        </div>
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label for="event_date"><?php _e('Data Evento:', 'textdomain'); ?></label>
+                <input type="text" class="form-control" id="event_date" name="event_date"  
+                    value="<?php echo $date_event; ?>" autocomplete="off">
+            </div>
         
-        <div id="sport_fields" class="form-group mb-3" style="display: <?php echo ($event_type === 'sport') ? 'block' : 'none'; ?>;">
-            <label for="teamone"><?php _e('Squadra di casa:', 'textdomain'); ?></label>
-            <input type="text" class="form-control mb-2" id="teamone" name="teamone" value="<?php echo $teamone; ?>">
+            <div class="form-group"  style="margin-bottom: 8px;">
+                <label for="event_time"><?php _e('Orario Evento:', 'textdomain'); ?></label>
+                <select id="event_time" name="event_time" class="form-control"></select>
+            </div>
 
-            <label for="teamtwo"><?php _e('Squadra trasferta:', 'textdomain'); ?></label>
-            <input type="text" class="form-control" id="teamtwo" name="teamtwo" value="<?php echo $teamtwo; ?>">
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label for="exact_event_time"><?php _e('Orario Esatto:', 'textdomain'); ?></label>
+                <select id="exact_event_time" name="exact_event_time"></select>
+            </div>
+        
+            <div class="form-group" style="margin-bottom: 8px;">
+                <label for="type_event"><?php _e('Tipo Evento:', 'textdomain'); ?></label>
+                <select id="type_event" name="type_event" class="form-control">
+                    <option value="sport" <?php selected($event_type, 'sport'); ?>><?php _e('Sport', 'textdomain'); ?></option>
+                    <option value="music" <?php selected($event_type, 'music'); ?>><?php _e('Music', 'textdomain'); ?></option>
+                    <option value="food"  <?php selected($event_type, 'food'); ?>><?php _e('Food', 'textdomain'); ?></option>
+                </select>
+            </div>
+            <div id="sport_fields" class="form-group" style="margin-bottom: 8px; display: <?php echo ($event_type === 'sport') ? 'block' : 'none'; ?>;">
+                <div class="row">
+                    <label for="teamone"><?php _e('Squadra di casa:', 'textdomain'); ?></label>
+                    <input type="text" class="form-control mb-2" id="teamone" name="teamone" value="<?php echo $teamone; ?>">
+                </div>
+                <div class="row">
+                    <label for="teamtwo"><?php _e('Squadra trasferta:', 'textdomain'); ?></label>
+                    <input type="text" class="form-control" id="teamtwo" name="teamtwo" value="<?php echo $teamtwo; ?>">
+                </div>
+            </div>
         </div>
         <?php
     }

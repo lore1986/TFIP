@@ -2,6 +2,18 @@
 
 class TFIP_Utils {
 
+
+    public static function TFIP_Utils_Normalize_Team_Name($name) {
+
+        $name = str_replace(' ', '', $name);
+        $name = strtolower($name);
+
+        $name = ucfirst($name);
+        $name = $name . '.png';
+    
+        return $name;
+    }
+
     public static function TFIP_Utils_Search_Return_Exact_Times($timestart, $timeend, $timebooking = null)
     {
         $start = DateTime::createFromFormat('H:i', $timestart);
@@ -101,10 +113,6 @@ class TFIP_Utils {
                 'exact_time'        => self::TFIP_Utils_Search_Return_Exact_Times($ts->timeslotstart, $ts->timeslotend, $timebooking)
             ];
 
-
-            //$ts['exact_times'] = 
-
-
             $slots[] = [
                 'ts' => $slot_
             ]; 
@@ -141,58 +149,13 @@ class TFIP_Utils {
                 'active'          => 1,
                 'timeslotTimeStr'  => $ts['start'] . ' - ' . $ts['end'],
                 'timeslotSelected' => 0,
-                'exact_time'        => self::TFIP_Utils_Search_Return_Exact_Times($ts->timeslotstart, $ts->timeslotend)
+                'exact_time'        => self::TFIP_Utils_Search_Return_Exact_Times($ts['start'], $ts['end'])
             ];
 
             $slots[] = [
                 'ts' => $ts
             ];
         }
-
-        // if ( count($default_slots) == 1 ) {
-        
-
-        //     $ts = [
-        //         'id'              => '',
-        //         'id_date'         => $dayId,
-        //         'timeslotstart'   => $default_slots[0]['start'],
-        //         'timeslotend'     => $default_slots[0]['end'],
-        //         'max_bookings'    => get_option('tfip_default_capienza', true),
-        //         'active_bookings' => 0,
-        //         'active'          => 1,
-        //         'timeslotTimeStr'  => $default_slots[0]['start'] . ' - ' . $default_slots[0]['end'],
-        //         'timeslotSelected' => 1,
-        //     ];
-
-
-        //     $slots[] = [
-        //         'ts' => $ts
-        //     ];
-
-
-            
-            
-        // } else {
-
-        //     foreach ( $default_slots as $ts ) {
-                
-        //         $ts = [
-        //             'id'              => '',
-        //             'id_date'         => $dayId,
-        //             'timeslotstart'   => $ts['start'],
-        //             'timeslotend'     => $ts['end'],
-        //             'max_bookings'    => get_option('tfip_default_capienza', true),
-        //             'active_bookings' => 0,
-        //             'active'          => 1,
-        //             'timeslotTimeStr'  => $ts['start'] . ' - ' . $ts['end'],
-        //             'timeslotSelected' => 0,
-        //         ];
-
-        //         $slots[] = [
-        //             'ts' => $ts
-        //         ];
-        //     }
-        // }
 
         return $slots;
     }

@@ -11,13 +11,12 @@ class TFIP_Database {
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';  
 
         $created_timeslots = [];
-        //$new_day_availability = 0;
         $overlap_verification = 0;
 
         foreach ($timeslots_in as $timeslot) {
             
             if (isset($timeslot['id_date'], $timeslot['start'], $timeslot['end'], $timeslot['capacity'], $timeslot['active_bookings'], $timeslot['active'])) {
-              
+            
                 $data = [
                     'id_date' => $timeslot['id_date'],
                     'timeslotstart' => $timeslot['start'],
@@ -26,21 +25,14 @@ class TFIP_Database {
                     'active_bookings' => $timeslot['active_bookings'],
                     'active' => $timeslot['active']
                 ];
-    
+
                 $format = ['%d', '%s', '%s', '%d', '%d', '%d'];
                 $wpdb->insert($table_name, $data, $format);
                 wp_reset_query();
 
-
-                ///changing
                 if ($wpdb->insert_id) {
-
                     $data['id'] = $wpdb->insert_id;
-
-                    $created_timeslots[] = [
-                        'ts' => (object)$data
-                    ];
-
+                    $created_timeslots[] = (object)$data;
                 } else {
                     return [
                         'resolution' => 0,
@@ -58,28 +50,24 @@ class TFIP_Database {
             }
         }
 
-        if($overlap_verification == count($timeslots_in)) 
-        {  
+        if($overlap_verification == count($timeslots_in)) {  
             return [
                 'resolution' => 0, 
                 'slot_data' => null,
                 'message' => "Overlapping timeslot found for all timeslots given" 
             ];
 
-        }else
-        {
+        } else {
             $success = $this->TFIP_Database_Update_Day_Max_Availability($timeslot['id_date']);
 
-            if((bool)((int)$success['resolution']))
-            {
+            if((bool)((int)$success['resolution'])) {
                 return [
                     'resolution' => 1,
                     'slot_data' => $created_timeslots,
                     'message' => "Timeslots inserted in DB"
                 ];
                 
-            }else
-            {
+            } else {
                 return [
                     'resolution' => 0,
                     'slot_data' => null,
@@ -87,9 +75,8 @@ class TFIP_Database {
                 ];
             }
         }
-        
-
     }
+
 
     // public function TFIP_Database_Search_And_Return_TimeSlot_By_Time_And_( $timeslots, $active_day_id, $timebooking ) {
 
@@ -124,32 +111,10 @@ class TFIP_Database {
         
         if(count($timeslots) == 0)
         {
-            $res_slots = $this->TFIP_Booking_Create_And_Return_Default_Timeslots($day_timestamp);
-
-            if(count($res_slots) > 0)
-            {
-
-                return [
-                    'timeslots' => $res_slots,
-                    'resolution' => 1,
-                    'message' => "Timeslots Created"
-                ];
-            
-            }else
-            {
-                return [
-                    'timeslots' => null,
-                    'resolution' => 0,
-                    'message' => "Error creating default timeslots"
-                ];
-            }
+            return $this->TFIP_Booking_Create_And_Return_Default_Timeslots($day_timestamp);
         }else
         {
-            return [
-                'timeslots' => $timeslots,
-                'resolution' => 1,
-                'message' => "Timeslots Founded"
-            ];
+            return $timeslots;
         }
 
     }
@@ -158,52 +123,43 @@ class TFIP_Database {
 
 
     public function TFIP_Database_Create_Active_Day($id) {
-        
         global $wpdb;
-
+    
         $table_name = $wpdb->prefix . 'tfip_active_days';
-
         $default_capienza = get_option('tfip_default_capienza', false);
-        
-        if($default_capienza != false)
-        {
-            $data = [
-                'id_date' => $id,        
-                'day_max' => $default_capienza,      
-                'active' => 1         
-            ];
-            
-            $format = ['%d', '%d', '%d'];
-            
-            $wpdb->insert($table_name, $data, $format);
-            
-            if ($wpdb->last_error == "") {
-                $return_res = [
-                    'resolution' => 1,
-                    'id_date' => $id,
-                ];
-            } else {
-                $return_res = [
-                    'resolution' => 0,
-                    'id_date' => $id
-                ];
-            }
-            
-            
-
-            return $return_res;
-
-        }else
-        {
-            $return_res = [
-                'resolution' => 0
-            ];
-
-            return $return_res;
+    
+        $id = intval($id);
+    
+        if ($default_capienza === false) {
+            return null;
         }
-        
-        
+    
+        $exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_name WHERE id_date = %d",
+            $id
+        ));
+    
+        if ($exists == 0) {
+            $data = [
+                'id_date' => $id,
+                'day_max' => intval($default_capienza),
+                'active'  => 1
+            ];
+            $format = ['%d', '%d', '%d'];
+    
+            $wpdb->insert($table_name, $data, $format);
+        }
+    
+        $result = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id_date = %d",
+            $id
+        ));
+    
+        wp_reset_query();
+    
+        return $result; 
     }
+    
 
     public function TFIP_Database_Update_Day_Max_Availability($id_date) {
         
@@ -660,7 +616,7 @@ class TFIP_Database {
     public function TFIP_Database_Event_Query_List($maxnum = -1)
     {
     
-        $timestamp_now = strtotime(date('Y-m-d'));
+        $timestamp_now = strtotime(date('d-m-Y'));
 
         $events = array();
 
@@ -671,14 +627,14 @@ class TFIP_Database {
                 'posts_per_page' => $maxnum,
                 'meta_query'     => array(
                     array(
-                        'key'     => '_TFIP_event_date',
+                        'key'     => '_TFIP_event_timestamp',
                         'value'   => $timestamp_now,
                         'type'    => 'NUMERIC',
                         'compare' => '>=',
                     )
                 ),
                 'orderby'        => 'meta_value_num',
-                'meta_key'       => '_TFIP_event_date',
+                'meta_key'       => '_TFIP_event_timestamp',
                 'order'          => 'ASC'
             )
         );
@@ -693,20 +649,22 @@ class TFIP_Database {
             
             $the_single_ipf->event_description = get_post_meta( $the_single_ipf->id, '_tfIpf_event_description', true );
             
-            $timeslot_id = get_post_meta( $the_single_ipf->id, '_TFIP_event_timeslot', true );
-            $timeslot = $this->TFIP_Database_Get_Specific_Timeslot($timeslot_id);
+            // $timeslot_id = get_post_meta( $the_single_ipf->id, '_TFIP_event_timeslot', true );
+            // $timeslot = $this->TFIP_Database_Get_Specific_Timeslot($timeslot_id);
 
-            $the_single_ipf->time_event = $timeslot->timeslotstart . " - " . $timeslot->timeslotend;
+            // $the_single_ipf->time_event = $timeslot->timeslotstart . " - " . $timeslot->timeslotend;
 
-            $the_single_ipf->date_event = date('Y-m-d',  get_post_meta( $the_single_ipf->id, '_TFIP_event_date', true ));
+            $the_single_ipf->time_event = get_post_meta( $the_single_ipf->id, '_TFIP_exact_event_time', true);
+
+            $the_single_ipf->date_event = get_post_meta( $the_single_ipf->id, '_TFIP_event_date', true);
 
             $the_single_ipf->event_type = get_post_meta($the_single_ipf->id, '_TFIP_event_type', true);
             $the_single_ipf->image_p = get_post_meta( $the_single_ipf->id, '_tfIpf_event_image', true );
             $the_single_ipf->teamone = get_post_meta($the_single_ipf->id, '_TFIP_event_TeamOne', true);
             $the_single_ipf->teamtwo = get_post_meta($the_single_ipf->id, '_TFIP_event_TeamTwo', true);
-            $the_single_ipf->max_participants = get_post_meta($the_single_ipf->id, 'squadre', true);
-
-            $the_single_ipf->available = "to be calculated";
+            
+            $the_single_ipf->max_participants = intval($timeslot->max_bookings);
+            $the_single_ipf->available = intval($timeslot->max_bookings) - intval($timeslot->active_bookings);
 
             array_push($events, $the_single_ipf);
         }

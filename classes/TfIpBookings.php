@@ -421,7 +421,7 @@ class TfIpBooking {
 
         if(count($timeslots) == 0)
         {
-            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_Create_Format_Timeslots($new_active_day_id)['timeslots'];
+            $timeslots = $this->_ipfDatabase->TFIP_Database_Get_Create_Format_Timeslots($new_active_day_id);
         }
         
 
@@ -431,13 +431,11 @@ class TfIpBooking {
 
         if($booking_data['id_new_timeslot'] == null)
         {
-            foreach ($timeslots as $tss) {
-                
-                $ts = $tss['ts'];
+            foreach ($timeslots as $ts) {
                 
                 if(($booking_data['time_booking'] >= $ts->timeslotstart) && ($booking_data['time_booking'] <= $ts->timeslotend))
                 {
-                    $new_booking_timeslot = $tss['ts'];
+                    $new_booking_timeslot = $ts;
                 }
             }
         }else
@@ -457,15 +455,9 @@ class TfIpBooking {
         {
             $booking_data['id_new_timeslot'] = $new_booking_timeslot->id;
         }
-        // }else
-        // {
-        //     $booking_data['id_new_timeslot'] = $new_booking_timeslot->id;
-        // }
-
 
         $temp_day_total_max  = 0;
         $day_local_active = 0;
-        //$same_slot = false;
         $availables = 0;
 
         foreach ($timeslots as $arrI) {
@@ -481,11 +473,7 @@ class TfIpBooking {
             $same_slot = true;
         }
 
-        //if booking is active remove all participants from previous booking from count.
-        
         $availables = 0;
-
-        // $availables = $new_booking_timeslot->max_bookings - $booking_data['participants'] - $new_booking_timeslot->active_bookings;
         $availables = $new_booking_timeslot->max_bookings - $booking_data['participants'] - $new_booking_timeslot->active_bookings;
 
         if($same_slot)
@@ -695,15 +683,15 @@ class TfIpBooking {
 
         if (!$active_day) {
 
-            $date_res = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($active_day_id);
+            $activeD = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($active_day_id);
                 
-            if($date_res['resolution'] == 0)
+            if(!$activeD)
             {
                 $return_obj['message'] = 'Error creating Day';
                 return $return_obj;
             }
 
-            $active_day = $date_res['id_date'];
+            $active_day = $activeD;
         } 
 
         $timeslots_res = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day_id);
@@ -719,7 +707,6 @@ class TfIpBooking {
             }
         }
         
-        $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($active_day_id);
 
         if($active_day->active)
         {

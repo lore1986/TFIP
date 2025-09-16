@@ -4,14 +4,14 @@
             <div class="alert alert-warning" role="alert" id="alert-booking" hidden></div>
         </div>
         <div id="tmp-loaded-form">
-            <input type="number"  id="datestamp" name="datestamp" value="<?php echo esc_html( $objdata->date_stamp ); ?>"  hidden  />
+            <input type="number" hidden id="datestamp" name="datestamp" value="<?php echo esc_html( $objdata->date_stamp ); ?>"  hidden  />
             <div class="row">
                 <div class="col-12 col-md-5 mb-2">
                     <input type="text" 
                         class="form-control time-input" 
                         id="date_str" 
                         name="date_str" 
-                        value="<?php esc_html( $objdata->date_stamp ) ?>" />
+                        value="<?php echo esc_html( $objdata->date_str ) ?>" />
                 </div>
 
                 <div class="col-12 col-md-3 mb-2">
@@ -40,7 +40,24 @@
 
     document.addEventListener('DOMContentLoaded', function () {
 
-        Load_Timeslots(<?= wp_json_encode( $objdata->timeslots ) ?>, 'client_timeslot');
+        const fpConf = {
+            dateFormat: "d-m-Y",
+            minDate: "today",
+            allowInput: true,
+            disableMobile: true
+        };
+    
+        const datecontrol = document.getElementById('date_str');
+
+        datecontrol.flatpickr(fpConf);
+        
+
+        Load_Timeslots(<?= wp_json_encode( $objdata->timeslots ) ?>, 'client_timeslot').then(
+            ()=>{
+                AttachUpdateTimeslotEvent('date_str', 'client_timeslot', 'exact_client_time');
+                AttachExactTimeEvent('client_timeslot', 'exact_client_time');
+            }
+        )
     });
 
 
