@@ -650,7 +650,7 @@ class TfIpCalendar {
 
                 $background_color_class = null;
             
-                $arr_args['total_bookings'] > 0 ? $background_color_class = '#c6e8f8' : $background_color_class = '#FFFFFF';
+                $arr_args['total_bookings'] > 0 ? $background_color_class = '#fce9d6' : $background_color_class = '#FFFFFF';
                    
                 $week[] = [
                     'weekday' => $date->format('l'),

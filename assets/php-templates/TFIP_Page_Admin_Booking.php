@@ -5,7 +5,7 @@
 <?php
       wp_head();
       $daysArr = ["Lunedi", "Martedi", "Mercoledi", "Giovedi", "Venerdi", "Sabato", "Domenica"];
-      get_header();
+      //get_header();
 ?>
 
 
@@ -14,9 +14,11 @@
 
     <div class="TFIP-style">
       <div class="container-fluid">
-
-        <div class="row">
-          <div class="col-12"  id="main-calendar">
+        <div class="row m-4">
+          <h1> Benvenuti nel Calendario Prenotazioni</h1>
+        </div>
+        <div class="row" style="background-color: #53cfcb  ;">
+          <div class="col-12 mt-3"  id="main-calendar">
               <div class="row align-items-center mb-3">
                 <div class="col-lg-4 col-8 d-flex justify-content-between align-items-center">
                   <button class="btn btn-primary" onclick="ajax_admin_call_calendar(0)" id="prev-month">&lt;</button>
