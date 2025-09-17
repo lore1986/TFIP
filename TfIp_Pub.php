@@ -31,7 +31,7 @@ add_shortcode('tfIpfNoEventBooking', 'TFIP_Pub_No_Event_Booking_Shortcode_Action
 // Admin plugin link
 $plugin = plugin_basename(__FILE__);
 $admin = new TFIP_Admin();
-add_filter("plugin_action_links_$plugin", [$admin, 'tfipf_add_settings_link']);
+add_filter("plugin_action_links_$plugin", [$admin, 'TFIP_Admin_add_settings_link']);
 
 // Global objects
 $database = new TFIP_Database();

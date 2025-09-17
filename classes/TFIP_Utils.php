@@ -2,7 +2,7 @@
 
 class TFIP_Utils {
 
-
+    
     public static function TFIP_Utils_Normalize_Team_Name($name) {
 
         $name = str_replace(' ', '', $name);

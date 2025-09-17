@@ -11455,3 +11455,17 @@ body {
 .numInputWrapper .arrowDown ::after {
   border-color: #000 transparent transparent transparent; /* arrow pointing down */
 }
+
+/* Events card admin */
+.TFIP-style .card-sport-admin
+{
+  background-color: #c4e6d5;
+}
+.TFIP-style .card-food-admin
+{
+  background-color: #ffc7a2 ;
+}
+.TFIP-style .card-music-admin
+{
+  background-color: #f89f94 ;
+}

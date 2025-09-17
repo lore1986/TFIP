@@ -111,8 +111,6 @@
                                 <br> che verrà proiettata il giorno<br>
                                 <b><?php echo esc_html($event_extended_date); ?></b> alle ore 
                                 <b><?php echo esc_html($post_meta['_TFIP_exact_event_time'][0]); ?></b> 
-                                in fascia oraria: 
-                                <b><?php echo esc_html($post_meta['_TFIP_event_time'][0]); ?></b> 
                             </p>
                         </div>
                     <?php endif; ?>

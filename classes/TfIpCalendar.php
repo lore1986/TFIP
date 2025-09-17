@@ -740,7 +740,14 @@ class TfIpCalendar {
         if(isset($_POST['maxnum']))
         {
             $maxnum = sanitize_text_field($_POST['maxnum']);
-            $calendar_events = $this->_ipfDatabase->TFIP_Database_Event_Query_List(intval($maxnum));
+
+
+            $date_today = new DateTime();          
+            $date_today->setTime(0, 0, 0);         
+            $date_stamp = $date_today->getTimestamp(); 
+            
+
+            $calendar_events = $this->_ipfDatabase->TFIP_Database_Get_Events('list', $date_stamp, intval($maxnum));
             $html = $this->TFIP_Calendar_Render_Event_List($calendar_events);
             echo $html;
             exit();

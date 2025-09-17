@@ -206,7 +206,13 @@ class TfIpBooking {
         $timebooking = $dt->format('H:i');
         //$status_int = $status == "confirmed" ? 1 : 0;
         $posteventnullable = $post_event_id == 0 ? null : $post_event_id;
-    
+        
+        if($posteventnullable != null)
+        {
+            $timebooking = get_post_meta( $posteventnullable, '_TFIP_exact_event_time', true);
+        }
+
+
         // Prepare data array
         $data = array(
             'id_timeslot' => $id_timeslot,
@@ -936,6 +942,7 @@ class TfIpBooking {
         $dt->setTime($hours, $minutes, 0); 
         $booking->time_booking = $dt->format('Y-m-d H:i:s.u');
 
+        $booking->exact_booking_time = $timeBooking;
 
         
         $booking->participants = intval($formData['participants']);

@@ -1,39 +1,30 @@
 <?php
 
-// include_once dirname( __FILE__ ) . '/TFIP_Database.php';
-// include_once dirname( __FILE__ ) . '/TfIpfManager.php';
-
-
 class TFIP_Admin {
     
     public function __construct() {
-        
-        add_action( 'admin_menu', array( $this, 'tfipf_settings_page' ) );
-        add_action( 'admin_init', array( $this, 'tfipf_register_settings' ) );
-        add_action( 'admin_init', array( $this, 'tfipf_settings_fields' ) );
-        add_filter( 'plugin_action_links_tfipfpub', array( $this, 'tfipf_add_settings_link' ) );
-
-        add_action( 'admin_notices', array( $this, 'tfipf_show_submitted_inputs' ) );
-
+        // Hook into WordPress to add settings page, register settings, show notices, and add plugin action links
+        add_action( 'admin_menu', array( $this, 'TFIP_Admin_settings_page' ) );
+        add_action( 'admin_init', array( $this, 'TFIP_Admin_register_settings' ) );
+        add_action( 'admin_init', array( $this, 'TFIP_Admin_settings_fields' ) );
+        add_filter( 'plugin_action_links_tfipfpub', array( $this, 'TFIP_Admin_add_settings_link' ) );
+        add_action( 'admin_notices', array( $this, 'TFIP_Admin_show_submitted_inputs' ) );
     }
 
-    public function tfipf_add_settings_link( $links ) {
+    // Adds a "Settings" link to the plugin action links on the plugins page
+    public function TFIP_Admin_add_settings_link( $links ) {
         $settings_link = '<a href="' . admin_url( 'options-general.php?page=TFIP_settings' ) . '">' . __( 'Settings' ) . '</a>';
         array_push( $links, $settings_link );
         return $links;
     }
 
-    public function tfipf_settings_page() {
+    // Registers the settings page in the WordPress admin menu
+    public function TFIP_Admin_settings_page() {
         add_options_page( 'TFIP', 'TFIP', 'manage_options', 'TFIP_settings', array( $this, 'TFIP_Admin_Settings_Page_Content' ) );
     }
 
-
-    /*
-        some kind of logging
-    */
-    public function tfipf_show_submitted_inputs() {
-
-
+    // Displays a success notice with the submitted settings values after saving
+    public function TFIP_Admin_show_submitted_inputs() {
         if (isset($_GET['page']) && $_GET['page'] === 'TFIP_settings' && isset($_GET['settings-updated']) && $_GET['settings-updated'] == 'true') {
 
             $token = esc_html(get_option('tfip_whatsapp_token'));
@@ -58,11 +49,7 @@ class TFIP_Admin {
         }
     }
 
-
-    /*
-        settings page content 
-    */
-
+    // Renders the HTML content of the settings page
     public function TFIP_Admin_Settings_Page_Content() {
         ?>
         <div class="wrap">
@@ -71,8 +58,6 @@ class TFIP_Admin {
                 <div>
                     <?php settings_fields( 'tfipf_settings_group' ); ?>
                 </div>
-                
-                
                 <?php do_settings_sections( 'TFIP_settings' ); ?>
                 <?php submit_button(); ?>
             </form>
@@ -80,21 +65,17 @@ class TFIP_Admin {
         <?php
     }
 
-    public function tfipf_register_settings() {
+    // Registers plugin settings with WordPress
+    public function TFIP_Admin_register_settings() {
         register_setting( 'tfipf_settings_group', 'tfip_whatsapp_token' );
-
-        register_setting( 'tfipf_settings_group', 'tfip_default_capienza', [$this, 'tfipf_sanitize_capienza_value'] );
-        
+        register_setting( 'tfipf_settings_group', 'tfip_default_capienza', [$this, 'TFIP_Admin_sanitize_capienza_value'] );
         register_setting('tfipf_settings_group', 'tfip_timeslots', [
-            'sanitize_callback' => [$this, 'sanitize_timeslots']
+            'sanitize_callback' => [$this, 'TFIP_Admin_sanitize_timeslots']
         ]);
-        
-
     }
     
-
-    public function sanitize_timeslots($input) {
-
+    // Sanitizes and validates the timeslots input, ensuring capacities add up to the default capienza
+    public function TFIP_Admin_sanitize_timeslots($input) {
         $sanitized = [];
         $total_capacity = 0;
 
@@ -117,33 +98,28 @@ class TFIP_Admin {
         $default_capienza = intval(get_option('tfip_default_capienza'));
 
         if ($total_capacity !== $default_capienza) {
-
             add_settings_error(
                 'tfip_timeslots',
                 'capacity_mismatch',
                 'The sum of timeslot capacities (' . $total_capacity . ') must equal the default capienza (' . $default_capienza . ').',
                 'error'
             );
-
             return get_option('tfip_timeslots');
         }
 
         return $sanitized;
     }
 
-    
-
-    public function tfipf_settings_fields() {
+    // Defines the settings sections and fields for the settings page
+    public function TFIP_Admin_settings_fields() {
         add_settings_section( 'tfipf_settings_section', 'Plugin Settings', '', 'TFIP_settings' );
-        add_settings_field( 'tfip_whatsapp_token', 'Token Whatsapp', array( $this, 'tfipf_whatsapp_token_callback' ), 'TFIP_settings', 'tfipf_settings_section' );
-        add_settings_field( 'tfip_default_capienza', 'Default Capienza', array( $this, 'tfipf_default_capienza_callback' ), 'TFIP_settings', 'tfipf_settings_section' );
-        
-        add_settings_field( 'add_timeslot_instance_button', 'Add Timeslots', array( $this, 'TFIP_ADMIN_Timeslots_render' ), 'TFIP_settings', 'tfipf_settings_section' );
-
+        add_settings_field( 'tfip_whatsapp_token', 'Token Whatsapp', array( $this, 'TFIP_Admin_whatsapp_token_callback' ), 'TFIP_settings', 'tfipf_settings_section' );
+        add_settings_field( 'tfip_default_capienza', 'Default Capienza', array( $this, 'TFIP_Admin_default_capienza_callback' ), 'TFIP_settings', 'tfipf_settings_section' );
+        add_settings_field( 'add_timeslot_instance_button', 'Add Timeslots', array( $this, 'TFIP_Admin_Timeslots_render' ), 'TFIP_settings', 'tfipf_settings_section' );
     }
 
-    public function TFIP_ADMIN_Timeslots_render()
-    {
+    // Renders the timeslots input fields with add/remove functionality
+    public function TFIP_Admin_Timeslots_render() {
         $saved_timeslots = get_option('tfip_timeslots', []);
         $html = '<div class="container TFIP-style">
                     <div id="ts-container">';
@@ -183,20 +159,20 @@ class TFIP_Admin {
         echo $html;
     }
 
-
-    public function tfipf_whatsapp_token_callback() {
+    // Renders the input field for the WhatsApp token option
+    public function TFIP_Admin_whatsapp_token_callback() {
         $string_option_value = get_option( 'tfip_whatsapp_token' );
         echo '<input type="text" name="tfip_whatsapp_token" value="' . esc_attr( $string_option_value ) . '" />';
     }
 
-    public function tfipf_default_capienza_callback() {
+    // Renders the input field for the default capienza option
+    public function TFIP_Admin_default_capienza_callback() {
         $number_option_value = get_option( 'tfip_default_capienza' );
         echo '<input type="number" name="tfip_default_capienza" value="' . esc_attr( $number_option_value ) . '" />';
     }
 
-    
-
-    function tfipf_sanitize_capienza_value( $input ) {
+    // Sanitizes the default capienza input to ensure it is an integer
+    function TFIP_Admin_sanitize_capienza_value( $input ) {
         $sanitized_capienza = intval( $input );
         return $sanitized_capienza;
     }
