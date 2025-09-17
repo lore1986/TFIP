@@ -30,31 +30,31 @@ class TfIpBooking {
         add_action( 'wp_ajax_tfip_admin_delete_booking', array( $this, 'TFIP_Booking_Delete_Booking'));
         add_action( 'wp_ajax_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
         add_action( 'wp_ajax_nopriv_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
-        // add_action( 'wp_ajax_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
-        // add_action( 'wp_ajax_nopriv_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
+        add_action( 'wp_ajax_tfip_update_timestamp', array( $this, 'TFIP_Booking_update_timestamp'));
+        add_action( 'wp_ajax_nopriv_tfip_update_timestamp', array( $this, 'TFIP_Booking_update_timestamp'));
 
     }
 
 
-    // public function tfip_update_timestamp()
-    // {
-    //     $res_e = [
-    //         'datestamp' => null
-    //     ];
+    public function TFIP_Booking_update_timestamp()
+    {
+        $res_e = [
+            'datestamp' => null
+        ];
 
-    //     if(isset($_POST['date']))  
-    //     {
-    //         $dateStr = sanitize_text_field( $_POST['date'] );
+        if(isset($_POST['date']))  
+        {
+            $dateStr = sanitize_text_field( $_POST['date'] );
             
-    //         $res_e['datestamp'] = strtotime($dateStr);
+            $res_e['datestamp'] = strtotime($dateStr);
 
-    //     } else
-    //     {
-    //         $res_e['datestamp'] = strtotime(date('today')); 
-    //     }
+        } else
+        {
+            $res_e['datestamp'] = strtotime(date('today')); 
+        }
 
-    //     wp_send_json( $res_e );
-    // }
+        wp_send_json( $res_e );
+    }
 
 
     function TFIP_Booking_rewrite_rule() {

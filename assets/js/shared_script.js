@@ -20,6 +20,9 @@ function AttachUpdateTimeslotEvent(selectTagId, selfRefObject, resetTimeDivIn)
 }
 
 
+
+
+
 function AttachExactTimeEvent(selectETimeTagId, divName)
 {
     const select = document.getElementById(selectETimeTagId);

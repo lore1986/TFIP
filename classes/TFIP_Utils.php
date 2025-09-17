@@ -84,7 +84,7 @@ class TFIP_Utils {
      * Return correct timeslot for selected time. loops timeslots->timeslotstart && timeslots->timeslotend
      * @param array array or object of all timeslots
      * @param int unix timestamp UTC of the day
-     * @param string time of booking in format 16:00 
+     * @param string time of booking in format $booking_dt = $booking_dt->format('Y-m-d H:i:s'); 
      * @return object specific timeslot 
     */
     public static function TFIP_Utils_Return_Timeslot_For_Selected_Time( $timeslots, $active_day_id, $timebooking ) {

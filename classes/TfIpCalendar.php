@@ -114,7 +114,15 @@ class TfIpCalendar {
             }else
             {
                 $timeslot = null;
-                $timeslot = TFIP_Utils::TFIP_Utils_Return_Timeslot_For_Selected_Time($timeslots, $active_day->id_date, $bookingTime);
+
+                $booking_dt = new DateTime();
+                $booking_dt->setTimestamp($active_day->id_date);
+                list( $hours, $minutes ) = explode( ":", $bookingTime );
+                $booking_dt->setTime($hours, $minutes, 0);
+                
+                $booking_dt = $booking_dt->format('Y-m-d H:i:s');
+
+                $timeslot = TFIP_Utils::TFIP_Utils_Return_Timeslot_For_Selected_Time($timeslots, $active_day->id_date, $booking_dt);
                 
                 if(($timeslot->active_bookings >= $timeslot->max_bookings) || !$timeslot->active)
                 {
