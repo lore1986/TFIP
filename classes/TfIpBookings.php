@@ -18,9 +18,9 @@ class TfIpBooking {
 
         $this->_manager = $manager;
 
-        add_action('init', [$this,'booking_rewrite_rule']);
-        add_filter('query_vars', [$this, 'add_custom_query_var']);
-        add_filter('template_include', [$this, 'load_custom_plugin_template']);
+        add_action('init', [$this,'TFIP_Booking_rewrite_rule']);
+        add_filter('query_vars', [$this, 'TFIP_Booking_add_custom_query_var']);
+        add_filter('template_include', [$this, 'TFIP_Booking_load_custom_plugin_template']);
 
         add_action( 'wp_ajax_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
         add_action( 'wp_ajax_nopriv_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
@@ -30,34 +30,34 @@ class TfIpBooking {
         add_action( 'wp_ajax_tfip_admin_delete_booking', array( $this, 'TFIP_Booking_Delete_Booking'));
         add_action( 'wp_ajax_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
         add_action( 'wp_ajax_nopriv_tfip_confirmBookingClient', array( $this, 'tfip_confirmBookingClient'));
-        add_action( 'wp_ajax_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
-        add_action( 'wp_ajax_nopriv_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
+        // add_action( 'wp_ajax_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
+        // add_action( 'wp_ajax_nopriv_tfip_update_timestamp', array( $this, 'tfip_update_timestamp'));
 
     }
 
 
-    public function tfip_update_timestamp()
-    {
-        $res_e = [
-            'datestamp' => null
-        ];
+    // public function tfip_update_timestamp()
+    // {
+    //     $res_e = [
+    //         'datestamp' => null
+    //     ];
 
-        if(isset($_POST['date']))  
-        {
-            $dateStr = sanitize_text_field( $_POST['date'] );
+    //     if(isset($_POST['date']))  
+    //     {
+    //         $dateStr = sanitize_text_field( $_POST['date'] );
             
-            $res_e['datestamp'] = strtotime($dateStr);
+    //         $res_e['datestamp'] = strtotime($dateStr);
 
-        } else
-        {
-            $res_e['datestamp'] = strtotime(date('today')); 
-        }
+    //     } else
+    //     {
+    //         $res_e['datestamp'] = strtotime(date('today')); 
+    //     }
 
-        wp_send_json( $res_e );
-    }
+    //     wp_send_json( $res_e );
+    // }
 
 
-    function booking_rewrite_rule() {
+    function TFIP_Booking_rewrite_rule() {
         add_rewrite_rule(
             '^booking/([^/]*)/?',
             'index.php?booking_code=$matches[1]',
@@ -65,12 +65,12 @@ class TfIpBooking {
         );
     }
 
-    function add_custom_query_var($vars) {
+    function TFIP_Booking_add_custom_query_var($vars) {
         $vars[] = 'booking_code';
         return $vars;
     }
     
-    function load_custom_plugin_template($template) {
+    function TFIP_Booking_load_custom_plugin_template($template) {
         $booking_code = get_query_var('booking_code');
     
         if ($booking_code) {
@@ -192,7 +192,6 @@ class TfIpBooking {
 
     */
 
-    //acab
     public function TFIP_Booking_Create_Client_Booking(
         $id_timeslot, $identification, $participants, $phone, $extra_message, $code, $status, $timebooking, $post_event_id = 0
     ) {
@@ -255,7 +254,6 @@ class TfIpBooking {
     }
 
 
-    //ok
     public function TFIP_Booking_Update_Booking()
     {
         // date_booking d-m-Y
@@ -397,31 +395,19 @@ class TfIpBooking {
 
 
     
-
-    public function TFIP_Booking_Get_Create_Active_Day($day_timestamp)
-    {
-        $new_active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($day_timestamp);
-
-        if($new_active_day == null)
-        {
-            $day_res = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($day_timestamp);
-            $new_active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($day_timestamp); 
-        }
-
-        return $new_active_day;
-    }
+    
 
     //ok
     public function TFIP_Booking_Check_Update_Booking($booking_data)
     {
         $new_active_day_id = $booking_data['new_dateid'];
 
-        $new_active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($new_active_day_id);
+        $new_active_day = $this->_ipfDatabase->TFIP_Booking_Get_Create_Active_Day($new_active_day_id);
         
-        if($new_active_day == null)
-        {
-            $new_active_day = $this->TFIP_Booking_Get_Create_Active_Day($new_active_day_id);
-        }
+        // if($new_active_day == null)
+        // {
+        //     $new_active_day = $this->TFIP_Booking_Get_Create_Active_Day($new_active_day_id);
+        // }
         
         $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($new_active_day_id);
 
@@ -685,21 +671,9 @@ class TfIpBooking {
             'message' => "empty"
         ];
 
-        $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($active_day_id);
+        $active_day = $this->_ipfDatabase->TFIP_Booking_Get_Create_Active_Day($active_day_id);
 
-        if (!$active_day) {
-
-            $activeD = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($active_day_id);
-                
-            if(!$activeD)
-            {
-                $return_obj['message'] = 'Error creating Day';
-                return $return_obj;
-            }
-
-            $active_day = $activeD;
-        } 
-
+    
         $timeslots_res = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day_id);
         
         if($timeslots_res == null)

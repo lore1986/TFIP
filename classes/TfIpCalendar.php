@@ -293,12 +293,7 @@ class TfIpCalendar {
         }else
         {
 
-            $active_day = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($id_day);
-            
-            if(!$active_day)
-            {
-                $active_day = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($id_day);
-            }
+            $active_day = $this->_ipfDatabase->TFIP_Booking_Get_Create_Active_Day($id_day);
 
             $existing_timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($active_day->id_date);
 

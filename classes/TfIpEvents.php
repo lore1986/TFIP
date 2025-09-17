@@ -164,13 +164,7 @@ class TfIpEvent
             $timestamp = $date_format->getTimestamp();
 
 
-            $activeDay = $this->_ipfDatabase->TFIP_Database_Get_Active_Day($timestamp);
-
-            if(!$activeDay)
-            {
-                $activeDay = $this->_ipfDatabase->TFIP_Database_Create_Active_Day($timestamp);
-            }
-
+            $activeDay = $this->_ipfDatabase->TFIP_Booking_Get_Create_Active_Day($timestamp);
             $timeslots = $this->_ipfDatabase->TFIP_Database_Get_All_Timeslots_For_Active_Day($activeDay->id_date);
 
             if(count($timeslots) == 0)

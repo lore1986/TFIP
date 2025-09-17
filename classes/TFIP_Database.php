@@ -10,7 +10,7 @@ class TFIP_Database {
     */
 
     /**
-     * Create or retrieve an active day entry with default capacity.
+     * Create an active day entry with default capacity.
      *
      * @param int $id Day timestamp.
      * @return object|null Row from tfip_active_days table or null if no default capacity.
@@ -54,6 +54,24 @@ class TFIP_Database {
         return $result; 
     }
 
+
+    /**
+     * Create or retrieve an active day entry 
+     *
+     * @param int $id Day timestamp.
+     * @return object|null Row from tfip_active_days table or null if no default capacity.
+    */
+    public function TFIP_Booking_Get_Create_Active_Day($day_timestamp)
+    {
+        $new_active_day = $this->TFIP_Database_Get_Active_Day($day_timestamp);
+
+        if($new_active_day == null)
+        {
+            $new_active_day = $this->TFIP_Database_Create_Active_Day($day_timestamp);
+        }
+
+        return $new_active_day;
+    }
 
     /**
      * Retrieve a single active day record.
