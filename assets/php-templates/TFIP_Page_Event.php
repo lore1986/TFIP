@@ -78,7 +78,7 @@
                                 <h2><?php echo esc_html($event_extended_date); ?></h2>
                                 <h4><?php echo esc_html($post_meta['_TFIP_event_time'][0]); ?></h4>
                                 <hr>
-                                <p class="descrizione-music"><?php echo esc_html($post_content); ?></p>
+                                <p class="descrizione-music"><?php echo wp_kses_post($post_content); ?></p>
                             </div>
                         </div>
                     <?php endif; ?>
