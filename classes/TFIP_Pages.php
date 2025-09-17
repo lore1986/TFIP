@@ -2,6 +2,12 @@
 
 class TFIP_Pages{
 
+    /**
+     * Creates/Add the booking calendar page 
+     *
+     * @return int pageid
+    */
+
     public function TFIP_Pages_Create_Page_Booking() {
         
         $booking_admin_page = 'Prenotazioni';

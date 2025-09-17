@@ -34,7 +34,7 @@ class TFIP_Templater
 
 
     /*
-        Register templates with funky funny tricky action
+        Register templates with funky funny tricky action by loading it inside the theme templates
     */
     public function TFIP_Templater_Register_Template($atts)
     {
@@ -61,7 +61,7 @@ class TFIP_Templater
 
 
     /*
-        Register templates with funky funny tricky action
+        Load correct template for correct page if custom type or if booking calendar
     */
     public function TFIP_Templater_Check_Template($template)
     {
