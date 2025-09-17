@@ -721,8 +721,6 @@ class TfIpCalendar {
             }else
             {
                 $newstatus = 'confirmed';
-
-                
             }
 
 

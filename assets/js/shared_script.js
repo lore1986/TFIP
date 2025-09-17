@@ -20,7 +20,12 @@ function AttachUpdateTimeslotEvent(selectTagId, selfRefObject, resetTimeDivIn)
 }
 
 
-
+function DisplayErrorMessage(divName, message)
+{
+    const divAlert = document.getElementById(divName);
+    divAlert.hidden = false;
+    divAlert.innerText = message;
+}
 
 
 function AttachExactTimeEvent(selectETimeTagId, divName)
@@ -94,8 +99,8 @@ function updateTimeslots(date, object_name, timeslotid = null, booking_time = nu
                 },
                 success: function (response) {
 
-                    console.log("update timeslot")
-                    console.log(response);
+                    //console.log("update timeslot")
+                    //console.log(response);
 
                     Load_Timeslots(response, object_name)
 
@@ -124,7 +129,7 @@ function updateExactBookingTime(start, end, divname) {
         },
         success: function (response) {
 
-            console.log(response)
+            //console.log(response)
 
             const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/partial/exact-time-instances.html';
 

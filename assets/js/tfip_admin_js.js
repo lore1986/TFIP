@@ -25,8 +25,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const timeslot_time = document.getElementById('get_event_time').value;
             const event_exact_time = document.getElementById('get_exact_event_time').value;
             
-            console.log(event_exact_time);
-            console.log(timeslot_time)
+            //console.log(event_exact_time);
+            //console.log(timeslot_time)
 
             if(timeslot_time != '')
             {

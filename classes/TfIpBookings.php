@@ -782,7 +782,7 @@ class TfIpBooking {
                 'timeslot_id' => null,
                 'resolution' => 3,
                 'day_id' => $active_day_id,
-                'message' => "Day is not active."
+                'message' => "Booking sfor this day are closed"
             ];
         }
     }
@@ -931,6 +931,23 @@ class TfIpBooking {
         if(intval($validation['resolution']) == 1)
         {
             $res = $this->TFIP_Booking_Create_And_Return($validation['timeslot_id'], $booking, $event_id);
+
+            
+            $first3 = substr($booking->phone, 0, 3); 
+
+            $lang = 'en_GB';
+
+            if($first3 == '+39')
+            {
+                $lang = 'it';
+            }
+
+            // ACTIVATE TO SEND MESSAGE TO CLIENT BOOKING CONFIRMATION
+            //$result = $this->_manager->tf_ipf_send_confirmation($booking->phone, $booking->identification, $booking->code, $lang);
+            
+            // ACTIVATE TO SEND MESSAGE TO PUB OWNER FOR BOOKING CONFIRMATION
+            //$result = $this->_manager->tf_ipf_send_confirmation($booking->phone, $booking->identification, $booking->code, $lang);
+
             $fin_res = $this->return_json_response($res['resolution'], $res['message'], $res['day_id'], $res['timeslot_id'], $res['updated_availability']);
         }else
         {

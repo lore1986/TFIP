@@ -82,7 +82,7 @@
             },
             success: function (response) {
                 
-                console.log(response);
+                //console.log(response);
                 const inputTimestamp = document.getElementById(nameDivChage);
                 inputTimestamp.value = response.datestamp;
             },

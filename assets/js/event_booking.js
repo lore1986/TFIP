@@ -29,10 +29,6 @@ function LoadBaseClientBookingForm(eventid, timeslotid, dayid, timeslottime = nu
 
 function submitBooking() {
     
-    const blockAdvise = document.getElementById('client-form-advise');
-    blockAdvise.style.display = 'none';
-
-
     const identification   = document.getElementById("identification").value.trim();
     const guests  = document.getElementById("guests").value.trim();
     const idphone = document.getElementById("idphone");
@@ -74,7 +70,8 @@ function submitBooking() {
     }
 
     if (!valid) {
-        alert(messages.join("\n"));
+
+        DisplayErrorMessage('client-form-advise', messages.join("\n"))
         return false;
     }
 
@@ -95,7 +92,7 @@ function submitBooking() {
         condition: condition ? 1 : 0,
     };
 
-    console.log(dataForm)
+    //console.log(dataForm)
 
     jQuery.ajax({
         url : TFIP_Ajax_Obj.ajaxUrl,
@@ -107,7 +104,7 @@ function submitBooking() {
         },
         success: function(response) {
 
-            console.log(response);
+            //console.log(response);
 
             if(response.resolution == 1)
             {
@@ -128,9 +125,7 @@ function submitBooking() {
 
             }else
             {
-                const blockAdvise = document.getElementById('client-form-advise');
-                blockAdvise.style.display = 'block';
-                blockAdvise.innerText = response.message;
+                DisplayErrorMessage('client-form-advise', response.message)
             }
         },
         error: function(xhr, status, error) {
@@ -164,7 +159,7 @@ function ConfirmCodeBooking()
         timebook: timebooking
     };
 
-    console.log(dataForm);
+    //console.log(dataForm);
     
     jQuery.ajax({
         url : TFIP_Ajax_Obj.ajaxUrl,
@@ -183,13 +178,12 @@ function ConfirmCodeBooking()
                 jQuery.get(templateUrl, function (templateHtml) {
                     const templateCompiled = _.template(templateHtml);
                     const renderedTemplate = templateCompiled();
-                    document.getElementById('confirm_booking_form').innerHTML = renderedTemplate;
+                    document.getElementById('final-form-booking').innerHTML = renderedTemplate;
                 });
 
             }else
             {
-                //fix add better handling should not happen
-                document.getElementById('confirm_booking_form').innerHTML = response.message;
+                DisplayErrorMessage('client-form-advise-final', response.message)
             }
             
             

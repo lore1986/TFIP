@@ -60,7 +60,7 @@ function validateFormAdminBooking(formId) {
             element.hasAttribute('required') &&
             (!element.value || element.value.trim() === '')
         ) {
-            console.log("element is required")
+            //console.log("element is required")
 
             output.message = "Elemento " + element.name  + " manca ed e' obbligatorio";
 
@@ -77,7 +77,7 @@ function serializeForm(formId) {
     const form = document.getElementById(formId);
     const formData = new FormData(form);
 
-    console.log(formData)
+    //console.log(formData)
 
 
     const result = {};
@@ -136,7 +136,7 @@ function save_form_admin_booking() {
         jsonData.phone = itln.getNumber();
     }
 
-    console.log(jsonData)
+    //console.log(jsonData)
 
     
     jQuery.ajax({
@@ -227,7 +227,7 @@ function save_form_admin_booking() {
                         const dateObj = new Date(`${year}-${month}-${day}`);
                         const dateTimestamp = (dateObj.getTime()) / 1000; 
 
-                        console.log(dateTimestamp)
+                        //console.log(dateTimestamp)
                         hide_show_layers(['container-timeslots-bookings'])
                         PrintDayBookings(dateTimestamp)
                     }
@@ -245,7 +245,7 @@ function EnableDisableDay(el)
     const dDayId = el.getAttribute('data-day-id');
     const newStatus = el.getAttribute('data-day-status');
 
-    console.log(dDayId)
+    //console.log(dDayId)
 
     jQuery.ajax({
         
@@ -259,7 +259,7 @@ function EnableDisableDay(el)
         },
         success: function(response) {
             
-            console.log(response)
+            //console.log(response)
 
             if(response.resolution == 1)
             {
@@ -344,7 +344,7 @@ function CallBookingFormFromTimeslot(el) {
     
     const timeslotId = el.getAttribute('data-timeslot-id');
     const dayidId = el.getAttribute('data-day-id');
-    console.log(dayidId)
+    //console.log(dayidId)
 
     const date = new Date(dayidId * 1000);
     const day = String(date.getUTCDate()).padStart(2, '0');
@@ -381,7 +381,7 @@ function deleteBooking(idBooking)
         },
         success: function(response) {
             
-            console.log(response)
+            //console.log(response)
 
             PrintDayBookings(response.day_id);
             
@@ -396,7 +396,7 @@ function get_form_admin_booking(obje)
 {
     return new Promise((resolve, reject) =>{
         
-        console.log(obje)
+        //console.log(obje)
         const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/main/admin-booking-form-creation.html';
 
         jQuery.get(templateUrl, function (templateHtml) {
@@ -444,8 +444,8 @@ function load_form_admin_booking(location, origin, data) {
         try {
             document.getElementById(location).hidden = false;
             
-            console.log("load answer")
-            console.log(data)
+            //console.log("load answer")
+            //console.log(data)
 
             if(data.resolution === 1)
             {
@@ -464,8 +464,8 @@ function load_form_admin_booking(location, origin, data) {
                     {
                         const alltimeslots = data.alltimeslots;
 
-                        console.log(data.timeslotid)
-                        console.log(alltimeslots)
+                        //console.log(data.timeslotid)
+                        //console.log(alltimeslots)
 
                         if(alltimeslots == null)
                         {
@@ -480,7 +480,7 @@ function load_form_admin_booking(location, origin, data) {
     
                             }else
                             {
-                                console.log("should call me instead")
+                                //console.log("should call me instead")
                                 LoadExtraTimeslotFormData(data.timeslotid)
 
                                 updateTimeslots(dayStr, 'time_booking', data.timeslotid).then(
@@ -519,7 +519,7 @@ function load_form_admin_booking(location, origin, data) {
 
                                         () => {
 
-                                            console.log("booking called")
+                                            //console.log("booking called")
                                             for (let index = 0; index < alltimeslots.length; index++) {
                                     
                                                 const element = alltimeslots[index].ts;
@@ -610,7 +610,7 @@ function load_form_admin_booking(location, origin, data) {
     
 //         dateInput.addEventListener('change', function(event) {
 
-//             console.log(event.target.value);
+//             //console.log(event.target.value);
 //             const selectedDate = event.target.value;
 //             updateTimeslots(selectedDate, 'time_booking');
 //         });
@@ -649,7 +649,7 @@ function Call_Ajax_On_New_Timeslot() {
         },
         success: function(response) {
             
-            console.log(response)
+            //console.log(response)
             
             let warning_slot = document.getElementById('timeslot_errors');
 
@@ -733,7 +733,7 @@ function deleteTimeslot(timeslotId) {
         {
             const templateUrl = TFIP_Ajax_Obj.templatesUrl + 'internal/partial/confirm_delete_timeslot.html';
 
-            jQuery.get(templateUrl, function(templateHtml) {
+            jQuery.get(templateUrl, PrintDayBookingsfunction(templateHtml) {
                 const templateFn = _.template(templateHtml);
                 const renderedHtml = templateFn({ slot: response });
         
@@ -906,7 +906,7 @@ function Update_form_admin_booking()
     const form = document.getElementById('add-booking-admin-form')
     const formData = new FormData(form);
 
-    console.log(formData)
+    //console.log(formData)
 
     const selectTimeslot = document.getElementById('time_booking')
     const selectedIndex = selectTimeslot.options['selectedIndex'];
@@ -924,7 +924,7 @@ function Update_form_admin_booking()
         dataType: 'json',
         success: function(data) {
 
-            console.log(data)
+            //console.log(data)
     
             const dateTimestamp = data.date_booking;
     
@@ -970,8 +970,8 @@ function CallBookingDetails(el) {
         },
         success: function (data) {
 
-            console.log('data datta')
-            console.log(data);
+            //console.log('data datta')
+            //console.log(data);
 
             const show_list = [
                 'booking-form-container_id',
@@ -1061,7 +1061,7 @@ function PrintDayBookings(timestampdate) {
         },
         success: function(response) {
             
-            console.log(response)
+            //console.log(response)
 
             jQuery.get(templateUrl, function(templateHtml) {
 
@@ -1156,7 +1156,7 @@ function handleClickEnd(el, start) {
 
 function ajax_admin_call_calendar(direction = null, date = null) {
 
-    console.log(date);
+    //console.log(date);
 
     var currentDate = document.getElementById('date-val').innerText;
   
@@ -1180,7 +1180,7 @@ function ajax_admin_call_calendar(direction = null, date = null) {
         },
         success: function(response) {
 
-            console.log(response)
+            //console.log(response)
 
 
           const newDate = response.newDate;

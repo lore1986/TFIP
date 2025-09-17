@@ -11469,3 +11469,9 @@ body {
 {
   background-color: #f89f94 ;
 }
+
+/* confirm */
+.TFIP-style .fw-bolder {
+	font-weight: bolder !important;
+	font-size: 30px;
+}

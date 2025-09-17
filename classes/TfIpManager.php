@@ -12,7 +12,7 @@ class TfIpManager
     {
         $this->version = 'v19.0'; 
         $this->code_id = '331689876690438';
-        $this->access_token =  get_option( 'tfipf_whatsapp_token' );
+        $this->access_token =  get_option( 'tfip_whatsapp_token' );
         $this->endpoint_url = 'https://graph.facebook.com/' . $this->version . '/' . $this->code_id . '/messages';
     }   
 
