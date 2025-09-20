@@ -18,9 +18,9 @@ class TfIpBooking {
 
         $this->_manager = $manager;
 
-        add_action('init', [$this,'TFIP_Booking_rewrite_rule']);
+        add_action('init', [$this, 'TFIP_Booking_rewrite_rule']);
         add_filter('query_vars', [$this, 'TFIP_Booking_add_custom_query_var']);
-        add_filter('template_include', [$this, 'TFIP_Booking_load_custom_plugin_template']);
+        add_action('template_redirect', [$this, 'TFIP_Booking_redirect_to_template']);
 
         add_action( 'wp_ajax_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
         add_action( 'wp_ajax_nopriv_tfip_confirmBooking', array( $this, 'tfip_confirmBooking'));
@@ -70,17 +70,35 @@ class TfIpBooking {
         return $vars;
     }
     
-    function TFIP_Booking_load_custom_plugin_template($template) {
+    function TFIP_Booking_redirect_to_template() {
+
         $booking_code = get_query_var('booking_code');
     
         if ($booking_code) {
-            $file = plugin_dir_path(__FILE__) . '../template/php-templates/TFIP_Single_Booking_Public.php';
+
+            $booking = $this->_ipfDatabase->TFIP_Database_Get_Single_Booking_By_Code($booking_code);
+            $timeslot = $this->_ipfDatabase->TFIP_Database_Get_Specific_Timeslot($booking->id_timeslot);
+
+            
+            $obj_booking = new stdClass();
+            $obj_booking->identification = $booking->identification;
+            $obj_booking->participants = $booking->participants;
+            $obj_booking->time_booking = $booking->booking_time;
+            $obj_booking->date_id = $timeslot->id_date;
+            $obj_booking->extra_message = $booking->extra_message;
+            $obj_booking->code = $booking->code;
+            
+            // Full path to your template
+            $file = plugin_dir_path(__DIR__) . 'assets/php-templates/TFIP_Single_Booking_Public.php';
+    
             if (file_exists($file)) {
-                return $file;
+                // Include the template manually
+                include $file;
+    
+                // Stop further WordPress processing
+                exit;
             }
         }
-    
-        return $template;
     }
     
 
@@ -277,7 +295,7 @@ class TfIpBooking {
             'identification'   => sanitize_text_field($_POST['identification']),
             'phone'            => sanitize_text_field($_POST['phone']),
             'participants'     => intval($_POST['participants']),
-            'extra_message'    => sanitize_textarea_field($_POST['extra_message']),
+            'extra_message'    => sanitize_textarea_field(stripslashes($_POST['extra_message'])),
             'status'           => sanitize_text_field($_POST['status']) === 'confirmed' ? 1 : 0
         ];
 
@@ -814,7 +832,7 @@ class TfIpBooking {
         $booking->participants = intval($formData['participants']);
         $booking->identification = sanitize_text_field(esc_attr($formData['identification']));
         $booking->phone = sanitize_text_field($formData['phone']);
-        $booking->extra_message = sanitize_text_field(esc_attr($formData['extra_message']));
+        $booking->extra_message = sanitize_text_field(stripslashes($formData['extra_message']));
         $booking->status = sanitize_text_field($formData['status'] == 'confirmed') ? 1 : 0;
         $booking->code = $this->_ipfDatabase->TFIP_Database_generate_code($booking->identification);
 
@@ -896,6 +914,9 @@ class TfIpBooking {
         $formData = $_POST['data_form'];
         $booking = new stdClass();
         $day_id = sanitize_text_field(esc_attr($formData['dayid']));
+		
+		$date_b = date('d-m-Y', $day_id);
+		
         $event_id = intval($formData['eventid']);
         $timeBooking = sanitize_text_field($formData['timebook']);
 
@@ -915,14 +936,14 @@ class TfIpBooking {
         list($hours, $minutes) = explode(":", $booking->time_booking);
         $dt->setTime($hours, $minutes, 0); 
         $booking->time_booking = $dt->format('Y-m-d H:i:s.u');
-
+		
         $booking->exact_booking_time = $timeBooking;
 
         
         $booking->participants = intval($formData['participants']);
         $booking->identification = sanitize_text_field(esc_attr($formData['identification']));
         $booking->phone = sanitize_text_field($formData['phone']);
-        $booking->extra_message = sanitize_text_field(esc_attr($formData['extra']));
+        $booking->extra_message = sanitize_text_field(stripslashes($formData['extra']));
         $booking->status = 1;
         $booking->code = sanitize_text_field(esc_attr($formData['bcode']));
 
@@ -942,13 +963,17 @@ class TfIpBooking {
                 $lang = 'it';
             }
 
-            // ACTIVATE TO SEND MESSAGE TO CLIENT BOOKING CONFIRMATION
-            //$result = $this->_manager->tf_ipf_send_confirmation($booking->phone, $booking->identification, $booking->code, $lang);
-            
-            // ACTIVATE TO SEND MESSAGE TO PUB OWNER FOR BOOKING CONFIRMATION
-            //$result = $this->_manager->tf_ipf_send_confirmation($booking->phone, $booking->identification, $booking->code, $lang);
 
+            //ACTIVATE TO SEND MESSAGE TO CLIENT
+            $result = $this->_manager->tf_ipf_send_confirmation($booking->phone, $booking->identification, $booking->code, $lang);
+            
+            //ACTIVATE TO SEND MESSAGE TO PUB OWNER
+            $result = $this->_manager->tf_ipf_communicate_booking( $booking->code, $booking->identification, $date_b, $timeBooking, $booking->participants, $booking->extra_message, $booking->phone);
+            
+            
             $fin_res = $this->return_json_response($res['resolution'], $res['message'], $res['day_id'], $res['timeslot_id'], $res['updated_availability']);
+
+
         }else
         {
             $fin_res = $this->return_json_response($validation['resolution'], $validation['message'], 
@@ -991,12 +1016,6 @@ class TfIpBooking {
             {
                 $timeslotTime = $timeslot->timeslotstart;
             }
-
-            // if($dateid == null || $dateid == '')
-            // {
-            //     $dateid = $this->_ipfDatabase->TFIP_Database_Get_Date_From_Timeslot($timeslot_id);
-                
-            // }
         }
        
         if(isset($dataform['dayid']) && sanitize_text_field($dataform['dayid']) != "" )
@@ -1024,7 +1043,7 @@ class TfIpBooking {
         $booking->participants =sanitize_text_field($dataform['guests']);
         $booking->identification = sanitize_text_field($dataform['identification']);
         $booking->phone = sanitize_text_field($dataform['idphone']);
-        $booking->extra_message = sanitize_text_field($dataform['extramessage']);
+        $booking->extra_message = sanitize_text_field(stripslashes($dataform['extramessage']));
         $booking->status = 1;
         $booking->code = $this->_ipfDatabase->TFIP_Database_generate_code($booking->identification);
 

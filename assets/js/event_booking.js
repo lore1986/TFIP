@@ -35,7 +35,7 @@ function submitBooking() {
     const extramessage = document.getElementById("extramessage").value; //check this one
     const condition = document.getElementById("condition").checked;
 
-
+   
     const eventid = document.getElementById("eventid").value;
     const timeslotid = document.getElementById("timeslotid").value;
     const dayid = document.getElementById("dayid").value;
@@ -159,7 +159,7 @@ function ConfirmCodeBooking()
         timebook: timebooking
     };
 
-    //console.log(dataForm);
+    console.log(dataForm);
     
     jQuery.ajax({
         url : TFIP_Ajax_Obj.ajaxUrl,

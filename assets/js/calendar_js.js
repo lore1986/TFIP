@@ -564,59 +564,6 @@ function load_form_admin_booking(location, origin, data) {
 }
 
 
-// function load_form_admin_booking(location, origin, idday) {
-
-//     document.getElementById(location).hidden = false;
-    
-//     var dayId = convert_date_to_string(idday);
-    
-//     const templateUrl = TFIP_Ajax_Obj.templatesUrl + '/internal/main/admin-booking-form-creation.html';
-
-//     jQuery.get(templateUrl, function(templateHtml){
-
-//         const templateCompiled = _.template(templateHtml);
-
-//         const rendered_template = templateCompiled({
-//             name_div: location,
-//             origin_i: origin,
-//             idday_i: idday,
-//             day_str : dayId,
-//         });
-
-
-//         document.getElementById(location).innerHTML = rendered_template;
-
-        
-//         var phoneInput = document.querySelector("#admin_phone");
-        
-//         window.intlTelInput(phoneInput, {
-//             allowDropdown: true,
-//             initialCountry: "it",
-//             autoPlaceholder: "polite",
-//             separateDialCode: true,
-//             loadUtils: () => import("https://cdn.jsdelivr.net/npm/intl-tel-input@25.10.0/build/js/utils.js"),
-//         });
-        
-//         const dateInput = document.getElementById('admin_date_id');
-
-//         const fpConf = {
-//             enableTime: false,
-//             noCalendar: false,
-//             dateFormat: "d-m-Y"
-//         };
-
-//         flatpickr(dateInput, fpConf);
-
-    
-//         dateInput.addEventListener('change', function(event) {
-
-//             //console.log(event.target.value);
-//             const selectedDate = event.target.value;
-//             updateTimeslots(selectedDate, 'time_booking');
-//         });
-//     });
-// }
-
 function Call_Ajax_On_New_Timeslot() {
 
     const form = document.getElementById('create-timeslot-form')
@@ -733,12 +680,11 @@ function deleteTimeslot(timeslotId) {
         {
             const templateUrl = TFIP_Ajax_Obj.templatesUrl + 'internal/partial/confirm_delete_timeslot.html';
 
-            jQuery.get(templateUrl, PrintDayBookingsfunction(templateHtml) {
+            jQuery.get(templateUrl, function(templateHtml) {
                 const templateFn = _.template(templateHtml);
                 const renderedHtml = templateFn({ slot: response });
-        
-                document.getElementById('timeslot-list').innerHTML = renderedHtml
-        
+            
+                document.getElementById('timeslot-list').innerHTML = renderedHtml;
             });
         },
         error: function(xhr, status, error) {

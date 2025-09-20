@@ -4,6 +4,11 @@ require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
 class TFIP_Database {
 
+    public function __construct() {
+       
+        add_action( 'wp', array($this, 'TFIP_Database_schedule_booking_cleanup' ));
+        add_action( 'TFIP_cleanup_old_bookings', array($this, 'TFIP_Database_delete_old_bookings'));
+    }
 
     /**
      * DAY MANAGMENT
@@ -49,8 +54,6 @@ class TFIP_Database {
             $id
         ));
     
-        wp_reset_query();
-    
         return $result; 
     }
 
@@ -85,7 +88,6 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_active_days';
         $result = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $id));
-        wp_reset_query();
 
         return $result;
     }
@@ -118,7 +120,7 @@ class TFIP_Database {
             
 
             $result = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $id_date));
-            wp_reset_query();
+
 
             if($result->day_max == $newmax)
             {
@@ -140,7 +142,7 @@ class TFIP_Database {
                 $wpdb->update($table_name, $data, $where);
             
                 $rows_affected = $wpdb->rows_affected;
-                wp_reset_query();
+
                 
                 if ($rows_affected == 1) {
                     
@@ -193,7 +195,7 @@ class TFIP_Database {
         $wpdb->update($table_name, $data, $where);
     
         $rows_affected = $wpdb->rows_affected;
-        wp_reset_query();
+
         
         if ($rows_affected == 1) {
             return true;
@@ -297,7 +299,6 @@ class TFIP_Database {
                         )
                     );
 
-                    wp_reset_query();
 
                     $booking_confirmed =[];
                     $booking_n_confirmed = [];
@@ -396,8 +397,7 @@ class TFIP_Database {
             'customers_in' => $total_customers_in
         ];
 
-        
-        wp_reset_query();
+    
 
         return $obj;
         
@@ -441,7 +441,7 @@ class TFIP_Database {
 
                 $format = ['%d', '%s', '%s', '%d', '%d', '%d'];
                 $wpdb->insert($table_name, $data, $format);
-                wp_reset_query();
+
 
                 if ($wpdb->insert_id) {
                     $data['id'] = $wpdb->insert_id;
@@ -524,8 +524,6 @@ class TFIP_Database {
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
         $timeslots = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_name WHERE id_date = %d", $id_date));
 
-        wp_reset_query();
-
         return $timeslots;
     }
 
@@ -541,7 +539,6 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
         $timeslot_instance = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id_slot));
-        wp_reset_query();
 
         return $timeslot_instance;
     }
@@ -559,7 +556,6 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
         $day_instance = $wpdb->get_row($wpdb->prepare("SELECT id_date FROM $table_name WHERE id = %d", $id_slot));
-        wp_reset_query();
 
         return $day_instance->id_date;
     }
@@ -586,8 +582,7 @@ class TFIP_Database {
         );
     
         $result = $wpdb->update($table_name, $data, $where);
-        wp_reset_query();
-        
+
         if ($result !== false) {
             return true;
         } else {
@@ -611,7 +606,6 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
         $timeslot_instance = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id_slot));
-        wp_reset_query();
 
 
         $ret = null;
@@ -764,7 +758,7 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_timeslot_instances';
         $timeslot_instance = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id_slot), ARRAY_A);
-        wp_reset_query();
+
         $ret = null;
 
         if($timeslot_instance)
@@ -794,12 +788,11 @@ class TFIP_Database {
                         'message' => 'Failed to update active_bookings: ' . $wpdb->last_error,
                         'updated_availability' => 0
                     ];
-                    wp_reset_query();
+ 
                     return $ret;
 
                 }else
                 {
-                    wp_reset_query();
 
                     $success = $this->TFIP_Database_Update_Day_Max_Availability($timeslot_instance['id_date']);
 
@@ -858,7 +851,6 @@ class TFIP_Database {
             )
         );
 
-        wp_reset_query();
 
         return $bookings;
     }
@@ -924,7 +916,22 @@ class TFIP_Database {
 
         $table_name = $wpdb->prefix . 'tfip_bookings';
         $result = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE idbooking = %d", $booking_id));
-        wp_reset_query();
+
+        return $result;
+    }
+
+    /**
+     * Retrieve a single booking record by code.
+     *
+     * @param string $booking code.
+     * @return object|null Booking row or null if not found.
+    */
+    public function TFIP_Database_Get_Single_Booking_By_Code($booking_code) {
+        
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'tfip_bookings';
+        $result = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE code = %s", $booking_code));
 
         return $result;
     }
@@ -1191,8 +1198,44 @@ class TFIP_Database {
         
     }
 
-    
+    /**
+     * Delete old bookings from the bookings table.
+     *
+     * This function deletes all bookings that are linked to timeslots
+     * where the associated date (`id_date` in active_days) is older than
+     * 14 days from the current UTC time. Only bookings are deleted —
+     * timeslot_instances and active_days remain untouched.
+     *
+     * @global wpdb $wpdb WordPress database abstraction object.
+     * @return void
+     */
 
+    function TFIP_Database_delete_old_bookings() {
+
+        global $wpdb;
+
+        $table_bookings           = $wpdb->prefix . 'tfip_bookings';
+        $table_timeslot_instances = $wpdb->prefix . 'tfip_timeslot_instances';
+        $table_active_days        = $wpdb->prefix . 'tfip_active_days';
+
+        $sql = "
+            DELETE b
+            FROM $table_bookings b
+            INNER JOIN $table_timeslot_instances t ON b.id_timeslot = t.id
+            INNER JOIN $table_active_days d ON t.id_date = d.id_date
+            WHERE d.id_date < (UNIX_TIMESTAMP(UTC_TIMESTAMP()) - (14 * 24 * 60 * 60))
+        ";
+
+        $wpdb->query( $sql );
+    }
+    
+   
+
+    function TFIP_Database_schedule_booking_cleanup() {
+        if ( ! wp_next_scheduled( 'TFIP_cleanup_old_bookings' ) ) {
+            wp_schedule_event( time(), 'daily', 'TFIP_cleanup_old_bookings' );
+        }
+    }
     
 
     

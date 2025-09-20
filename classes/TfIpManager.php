@@ -180,7 +180,7 @@ class TfIpManager
                         'type' => 'body',
                         'parameters' => array(
                             array('type' => 'text', 'text' => $identification),
-                            array('type' => 'text', 'text' => date('d/m/Y', $datebooking)),
+                            array('type' => 'text', 'text' => $datebooking),
                             array('type' => 'text', 'text' => $timebooking),
                             array('type' => 'text', 'text' => $participants),
                             array('type' => 'text', 'text' => $phoneu),
