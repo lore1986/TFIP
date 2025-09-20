@@ -39,3 +39,22 @@ You can also:
 - **Enable WhatsApp notifications** by entering your WhatsApp API token. This allows the plugin to send confirmation messages to customers and booking alerts to your company.
 
 ---
+
+##  Shortcodes
+
+TFIP provides two shortcodes you can use to display and events available for bookings and another one to display
+a booking form for your costumers on your website:
+
+---
+
+### 1. `[tfIpfCalendarShort]`  
+
+Displays **all events** and allows visitors to book a spot during a specific event.  
+
+#### Attributes:
+
+maxnum (optional) – Maximum number of events to display. Default is -1 (all events).
+
+### 2. [tfIpfNoEventBooking]
+
+Displays **the booking form** for customers to reserve a spot at a specific date, within a specific timeslot and time.
